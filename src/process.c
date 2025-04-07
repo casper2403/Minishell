@@ -5,7 +5,14 @@
 // EXECUTOR
 int process_input(char *input)
 {
-	tokenizer();
+	printf("%s\n", input);
+	// pid_t pid;
+	//
+	// pid = fork();
+	// char *command[] = {"/usr/bin/ls", "-l" , "src", NULL};
+	// if (pid == 0)
+	// 	execve(command[0], command, NULL);
+	// tokenizer();
 	return (0);
 }
 <<<<<<< HEAD

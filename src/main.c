@@ -37,7 +37,7 @@ int main() {
 	signal(SIGQUIT, signal_handler);
 	while (1)
 	{
-		input = readline("> ");
+		input = readline("minishell> ");
 		if (!input)
 		{
 			write(1, "exit\n", 5);
@@ -48,5 +48,6 @@ int main() {
 			add_history(input);
 		free(input);
 	}
+	rl_clear_history();
 	return 0;
 }
