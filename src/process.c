@@ -1,10 +1,23 @@
 #include "minishell.h"
 
-int lexer(char **div_input)
+int lexer(char *token)
 {
+
 	return (0);
 }
 
+int count_pipes(char *input)
+{
+	int i = 0;
+	int count = 0;
+
+	while (input[i])
+	{
+		if (input[i++] == '|')
+			count++;
+	}
+	return (count);
+}
 
 // split by pipes, IF the pipe is not in quotes!!
 char **split_input(char *input)
@@ -16,7 +29,7 @@ char **split_input(char *input)
 	int start;
 	int j;
 	
-	tokenized = malloc(700 * sizeof(char *));
+	tokenized = malloc((count_pipes(input) + 2) * sizeof(char *));
 	in_s_quote = in_d_quote	= i = j = start = 0;
 	while(input[i])
 	{
@@ -29,6 +42,13 @@ char **split_input(char *input)
 			in_s_quote = !in_s_quote;
 		if (input[i] == '\"')
 			in_d_quote = !in_d_quote;
+		if (input[i] == ';' || input[i] == '\\')
+		{
+			while (j > 0)
+				free(tokenized[--j]);
+			free(tokenized);
+			return (NULL);
+		}
 		i++;
 	}
 	tokenized[j++] = ft_substr(input, start, i - start);
@@ -46,10 +66,12 @@ int tokenizer(char *input)
 		return 1;
 	while (divided_input[i])
 	{
-		if (lexer(divided_input))
+		if (lexer(divided_input[i]))
 			return (1);
-		printf("%s\n", divided_input[i++]);
+		printf("%s\n", divided_input[i]);
+		free(divided_input[i++]);
 	}
+	free(divided_input);
 	return (0);
 }
 

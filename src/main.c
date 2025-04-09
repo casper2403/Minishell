@@ -44,7 +44,7 @@ int main() {
 			break;
 		}
 		if (process_input(input))
-			return (printf("bad input.\n"));
+			printf("bad input.\n");
 		if (*input)
 			add_history(input);
 		free(input);
