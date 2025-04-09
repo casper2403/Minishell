@@ -43,7 +43,8 @@ int main() {
 			write(1, "exit\n", 5);
 			break;
 		}
-		process_input(input);
+		if (process_input(input))
+			return (printf("bad input.\n"));
 		if (*input)
 			add_history(input);
 		free(input);

@@ -8,6 +8,8 @@
 #include <readline/readline.h>
 #include <readline/history.h>
 #include <stdbool.h>
+#include <sys/wait.h>
+#include "../lib/libft/libft.h"
 
 typedef struct s_token
 {

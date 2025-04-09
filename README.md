@@ -4,8 +4,6 @@ Some intro...
 
 ## TODO
 <!-- TODO-START -->
-<<<<<<< HEAD
-=======
 - `./src/process.c:12`
   > check all redirectors and keep rest as args
   > make sure that everything is malloced
@@ -32,5 +30,4 @@ Some intro...
   > free insides too!
   > 
 
->>>>>>> 02e7896 (readme is fixed)
 <!-- TODO-END -->
