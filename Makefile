@@ -6,7 +6,7 @@ OFLAGS		= -Wall -Wextra -g
 OBJ			= obj
 
 # Source files
-EXEC_SRCS	= src/main.c src/process.c
+EXEC_SRCS	= src/main.c src/process.c src/free_functions.c
 
 # Object files in the obj folder
 EXEC_OBJS	= $(EXEC_SRCS:src/%.c=obj/%.o)

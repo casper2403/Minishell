@@ -1,7 +1,9 @@
+
 import os
 import re
 
 SOURCE_DIRS = ["src", "include"]
+COMMENT_PATTERN = re.compile(r"\s*(//|#)\s?(.*)")
 TODO_PATTERN = re.compile(r"(//|#)\s*TODO[:]?\s*(.*)")
 
 def extract_todos():
@@ -14,10 +16,41 @@ def extract_todos():
                 continue
             path = os.path.join(root, file)
             with open(path, "r", encoding="utf-8") as f:
-                for i, line in enumerate(f, 1):
-                    match = TODO_PATTERN.search(line)
-                    if match:
-                        todos.append(f"- `{path}:{i}` — {match.group(2).strip()}")
+                lines = f.readlines()
+
+            i = 0
+            while i < len(lines):
+                line = lines[i]
+                todo_match = TODO_PATTERN.search(line)
+                if todo_match:
+                    # Start collecting adjacent comments (above)
+                    comments = []
+                    j = i - 1
+                    while j >= 0 and COMMENT_PATTERN.match(lines[j]):
+                        content = COMMENT_PATTERN.match(lines[j]).group(2).strip()
+                        if "TODO" not in content:
+                            comments.insert(0, content)
+                        j -= 1
+
+                    # Add inline TODO comment if it has non-TODO content
+                    content = todo_match.group(2).strip()
+                    if content and "TODO" not in content:
+                        comments.append(content)
+
+                    # Collect adjacent comments (below)
+                    j = i + 1
+                    while j < len(lines) and COMMENT_PATTERN.match(lines[j]):
+                        content = COMMENT_PATTERN.match(lines[j]).group(2).strip()
+                        if "TODO" not in content:
+                            comments.append(content)
+                        j += 1
+
+                    if comments:  # skip empty blocks
+                        block = f"- `{path}:{i+1}`\n```c\n" + "\n".join(comments) + "\n```\n"
+                        todos.append(block)
+                    i = j  # Skip processed comment block
+                else:
+                    i += 1
     return todos
 
 def update_readme(todos):
@@ -34,8 +67,12 @@ def update_readme(todos):
     except ValueError:
         raise RuntimeError("README.md must contain <!-- TODO-START --> and <!-- TODO-END --> markers.")
 
-    new_block = [todo + "\n" for todo in todos]
+    new_block = [todo + "\n\n" for todo in todos]
     new_lines = lines[:start] + new_block + lines[end:]
 
     with open("README.md", "w", encoding="utf-8") as f:
         f.writelines(new_lines)
+
+if __name__ == "__main__":
+    todos = extract_todos()
+    update_readme(todos)

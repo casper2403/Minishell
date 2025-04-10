@@ -13,12 +13,16 @@ if &shortmess =~ 'A'
 else
   set shortmess=aoO
 endif
-badd +33 src/main.c
-badd +14 src/minishell.h
-badd +8 src/process.c
+badd +1 src/free_functions.c
+badd +1 src/main.c
+badd +1 src/minishell.h
+badd +101 src/process.c
 argglobal
 %argdel
+$argadd src/free_functions.c
 $argadd src/main.c
+$argadd src/minishell.h
+$argadd src/process.c
 edit src/main.c
 let s:save_splitbelow = &splitbelow
 let s:save_splitright = &splitright
@@ -27,7 +31,10 @@ wincmd _ | wincmd |
 vsplit
 wincmd _ | wincmd |
 vsplit
-2wincmd h
+wincmd _ | wincmd |
+vsplit
+3wincmd h
+wincmd w
 wincmd w
 wincmd w
 let &splitbelow = s:save_splitbelow
@@ -39,11 +46,16 @@ set winminheight=0
 set winheight=1
 set winminwidth=0
 set winwidth=1
-exe 'vert 1resize ' . ((&columns * 159 + 239) / 478)
-exe 'vert 2resize ' . ((&columns * 158 + 239) / 478)
-exe 'vert 3resize ' . ((&columns * 159 + 239) / 478)
+exe 'vert 1resize ' . ((&columns * 119 + 239) / 479)
+exe 'vert 2resize ' . ((&columns * 119 + 239) / 479)
+exe 'vert 3resize ' . ((&columns * 119 + 239) / 479)
+exe 'vert 4resize ' . ((&columns * 119 + 239) / 479)
 argglobal
-balt src/minishell.h
+if bufexists(fnamemodify("src/main.c", ":p")) | buffer src/main.c | else | edit src/main.c | endif
+if &buftype ==# 'terminal'
+  silent file src/main.c
+endif
+balt src/free_functions.c
 setlocal foldmethod=manual
 setlocal foldexpr=0
 setlocal foldmarker={{{,}}}
@@ -54,11 +66,11 @@ setlocal foldnestmax=20
 setlocal foldenable
 silent! normal! zE
 let &fdl = &fdl
-let s:l = 35 - ((34 * winheight(0) + 59) / 119)
+let s:l = 1 - ((0 * winheight(0) + 59) / 119)
 if s:l < 1 | let s:l = 1 | endif
 keepjumps exe s:l
 normal! zt
-keepjumps 35
+keepjumps 1
 normal! 0
 wincmd w
 argglobal
@@ -66,7 +78,7 @@ if bufexists(fnamemodify("src/minishell.h", ":p")) | buffer src/minishell.h | el
 if &buftype ==# 'terminal'
   silent file src/minishell.h
 endif
-balt src/process.c
+balt src/main.c
 setlocal foldmethod=manual
 setlocal foldexpr=0
 setlocal foldmarker={{{,}}}
@@ -77,12 +89,12 @@ setlocal foldnestmax=20
 setlocal foldenable
 silent! normal! zE
 let &fdl = &fdl
-let s:l = 14 - ((13 * winheight(0) + 59) / 119)
+let s:l = 1 - ((0 * winheight(0) + 59) / 119)
 if s:l < 1 | let s:l = 1 | endif
 keepjumps exe s:l
 normal! zt
-keepjumps 14
-normal! 015|
+keepjumps 1
+normal! 0
 wincmd w
 argglobal
 if bufexists(fnamemodify("src/process.c", ":p")) | buffer src/process.c | else | edit src/process.c | endif
@@ -100,17 +112,41 @@ setlocal foldnestmax=20
 setlocal foldenable
 silent! normal! zE
 let &fdl = &fdl
-let s:l = 10 - ((9 * winheight(0) + 59) / 119)
+let s:l = 102 - ((101 * winheight(0) + 59) / 119)
 if s:l < 1 | let s:l = 1 | endif
 keepjumps exe s:l
 normal! zt
-keepjumps 10
+keepjumps 102
+normal! 05|
+wincmd w
+argglobal
+if bufexists(fnamemodify("src/free_functions.c", ":p")) | buffer src/free_functions.c | else | edit src/free_functions.c | endif
+if &buftype ==# 'terminal'
+  silent file src/free_functions.c
+endif
+balt src/process.c
+setlocal foldmethod=manual
+setlocal foldexpr=0
+setlocal foldmarker={{{,}}}
+setlocal foldignore=#
+setlocal foldlevel=0
+setlocal foldminlines=1
+setlocal foldnestmax=20
+setlocal foldenable
+silent! normal! zE
+let &fdl = &fdl
+let s:l = 6 - ((5 * winheight(0) + 59) / 119)
+if s:l < 1 | let s:l = 1 | endif
+keepjumps exe s:l
+normal! zt
+keepjumps 6
 normal! 0
 wincmd w
 3wincmd w
-exe 'vert 1resize ' . ((&columns * 159 + 239) / 478)
-exe 'vert 2resize ' . ((&columns * 158 + 239) / 478)
-exe 'vert 3resize ' . ((&columns * 159 + 239) / 478)
+exe 'vert 1resize ' . ((&columns * 119 + 239) / 479)
+exe 'vert 2resize ' . ((&columns * 119 + 239) / 479)
+exe 'vert 3resize ' . ((&columns * 119 + 239) / 479)
+exe 'vert 4resize ' . ((&columns * 119 + 239) / 479)
 tabnext 1
 if exists('s:wipebuf') && len(win_findbuf(s:wipebuf)) == 0 && getbufvar(s:wipebuf, '&buftype') isnot# 'terminal'
   silent exe 'bwipe ' . s:wipebuf
