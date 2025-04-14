@@ -1,11 +1,32 @@
 #include "minishell.h"
 
+// split by spaces, keep track of quotes
+// i think this is right
+// look for edge cases
 int count_args(char *command)
 {
-	return 
+	bool in_s_quote;
+	bool in_d_quote;
+	int i;
+	int count;
+
+	in_s_quote = in_d_quote	= i = count = 0;
+	while (command[i])
+	{
+		if (command[i] == ' ' && !in_s_quote && !in_d_quote)
+		{
+			count++;
+			while (command[i] == ' ')
+				i++;
+		}
+		if (command[i] == '\'' && !in_d_quote)
+			in_s_quote = !in_s_quote;
+		if (command[i] == '\"' && !in_s_quote)
+			in_d_quote = !in_d_quote;
+		i++;
+	}
+	return (count);
 }
-
-
 
 // split by spaces except for in quotes
 int split_arguments(char *command, char **argv)
@@ -22,14 +43,18 @@ int split_arguments(char *command, char **argv)
 		if (command[i] == ' ' && !in_s_quote && !in_d_quote)
 		{
 			argv[j++] = ft_substr(command, start, i - start);
+			printf("%s\n", argv[j - 1]);
 			start = i + 1;
 		}
-		if (command[i] == '\'')
+		if (command[i] == '\'' && !in_d_quote)
 			in_s_quote = !in_s_quote;
-		if (command[i] == '\"')
+		if (command[i] == '\"' && !in_s_quote)
 			in_d_quote = !in_d_quote;
 		i++;
 	}
+	argv[j++] = ft_substr(command, start, i - start);
+	printf("%s\n", argv[j - 1]);
+	argv[j] = NULL;
 	if (in_d_quote == true || in_s_quote == true)
 		return (1); // unclosed quotes. should not be handled
 	return (0);
@@ -50,15 +75,26 @@ struct s_token *lexer(char *split_by_pipe)
 	return (token);
 }
 
+// TODO
+// incorrect! should keep track of quotes!
+// check if full fixed
 int count_pipes(char *input)
 {
-	int i = 0;
-	int count = 0;
+	int i;
+	int count;
+	bool in_s_quote;
+	bool in_d_quote;
 
+	in_s_quote = in_d_quote	= i = count = 0;
 	while (input[i])
 	{
-		if (input[i++] == '|')
+		if (input[i] == '|' && !in_s_quote && !in_d_quote)
 			count++;
+		if (input[i] == '\'' && !in_d_quote)
+			in_s_quote = !in_s_quote;
+		if (input[i] == '\"' && !in_s_quote)
+			in_d_quote = !in_d_quote;
+		i++;
 	}
 	return (count);
 }
@@ -84,9 +120,9 @@ char **split_input(char *input)
 			tokenized[j++] = ft_substr(input, start, i - start);
 			start = i + 1;
 		}
-		if (input[i] == '\'')
+		if (input[i] == '\'' && !in_d_quote)
 			in_s_quote = !in_s_quote;
-		if (input[i] == '\"')
+		if (input[i] == '\"' && !in_s_quote)
 			in_d_quote = !in_d_quote;
 		if (input[i] == ';' || input[i] == '\\')
 		{
@@ -120,7 +156,7 @@ struct s_token **tokenizer(char *input)
 			free_lexer(tokens, i);
 			return (NULL);
 		}
-		printf("%s\n", divided_input[i]);
+		// printf("%s\n", divided_input[i]);
 		free(divided_input[i++]);
 	}
 	free(divided_input);
