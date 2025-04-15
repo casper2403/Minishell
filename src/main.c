@@ -37,8 +37,8 @@ void	setup_signals(void)
 	struct sigaction	sa_int;
 	struct sigaction	sa_quit;
 
-	sa_int = {0};
-	sa_quit = {0};
+	memset(&sa_int, 0, sizeof(struct sigaction));
+	memset(&sa_quit, 0, sizeof(struct sigaction));
 	sa_int.sa_handler = signal_handler;
 	sigemptyset(&sa_int.sa_mask);
 	sa_int.sa_flags = SA_RESTART;
@@ -100,7 +100,9 @@ int	main(int argc, char **argv, char **env)
 {
 	char	*input;
 	char	**local_env;
+	int last_exit;
 
+	last_exit = 0;
 	local_env = copy_env(env);
 	if (!local_env)
 	{
@@ -121,7 +123,7 @@ int	main(int argc, char **argv, char **env)
 		if (*input)
 		{
 			add_history(input);
-			process_input(input, &local_env);
+			process_input(input, &last_exit, &local_env);
 		}
 		free(input);
 	}

@@ -35,7 +35,21 @@ typedef struct s_token
 	struct s_token	*next;
 }					t_token;
 
-int					process_input(char *input, char ***local_env);
+int					process_input(char *input, int *last_exit, char ***env);
 void				free_lexer(struct s_token **tokens, int i);
+
+
+//executor 
+int executor(struct s_token **tokens, int *last_exit, char ***env);
+
+//buildin
+int builtin_echo(char **argv);
+int builtin_cd(char **argv, char ***env);
+int builtin_pwd(char **argv);
+int builtin_export(char **argv, char ***env);
+int builtin_unset(char **argv, char ***env);
+int builtin_env(char **argv, char ***env);
+int builtin_exit(char **argv);
+
 
 #endif
