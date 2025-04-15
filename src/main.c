@@ -1,8 +1,8 @@
 #include "minishell.h"
 
-static volatile int signal_received = 0;
+static volatile int	signal_received = 0;
 
-void ctrl_c_handler(void)
+void	ctrl_c_handler(void)
 {
 	write(1, "\n", 1);
 	rl_replace_line("", 0);
@@ -10,17 +10,18 @@ void ctrl_c_handler(void)
 	rl_redisplay();
 }
 
-void ctrl_backslash_handler(void)
+void	ctrl_backslash_handler(void)
 {
-	rl_replace_line("", 0);
-	rl_on_new_line();
-	rl_redisplay();
+	// Do absolutely fucking nothin??
+	// rl_replace_line("", 0);
+	// rl_on_new_line();
+	// rl_redisplay();
 }
 
-void signal_handler(int signalnumber)
+void	signal_handler(int signalnumber)
 {
 	if (signal_received)
-		return;
+		return ;
 	signal_received = 1;
 	if (signalnumber == SIGINT)
 		ctrl_c_handler();
@@ -29,26 +30,102 @@ void signal_handler(int signalnumber)
 	signal_received = 0;
 }
 
+// CHANGE sigaction gebruikt ipv signal.
 
-int main() {
-	char *input;
+void	setup_signals(void)
+{
+	struct sigaction	sa_int;
+	struct sigaction	sa_quit;
 
-	signal(SIGINT, signal_handler);
-	signal(SIGQUIT, signal_handler);
+	sa_int = {0};
+	sa_quit = {0};
+	sa_int.sa_handler = signal_handler;
+	sigemptyset(&sa_int.sa_mask);
+	sa_int.sa_flags = SA_RESTART;
+	if (sigaction(SIGINT, &sa_int, NULL) == -1)
+	{
+		perror("sigaction SIGINT");
+		exit(1);
+	}
+	sa_quit.sa_handler = signal_handler;
+	sigemptyset(&sa_quit.sa_mask);
+	sa_quit.sa_flags = SA_RESTART;
+	if (sigaction(SIGQUIT, &sa_quit, NULL) == -1)
+	{
+		perror("sigaction SIGQUIT");
+		exit(1);
+	}
+}
+
+static char	**copy_env(char **env)
+{
+	int		count;
+	char	**new_env;
+
+	count = 0;
+	while (env[count])
+		count++;
+	new_env = malloc((count + 1) * sizeof(char *));
+	if (!new_env)
+		return (NULL);
+	for (int i = 0; i < count; i++)
+	{
+		new_env[i] = ft_strdup(env[i]);
+		if (!new_env[i])
+		{
+			while (--i >= 0)
+				free(new_env[i]);
+			free(new_env);
+			return (NULL);
+		}
+	}
+	new_env[count] = NULL;
+	return (new_env);
+}
+
+static void	free_env(char **env)
+{
+	int	i;
+
+	i = 0;
+	while (env[i])
+	{
+		free(env[i]);
+		i++;
+	}
+	free(env);
+}
+
+int	main(int argc, char **argv, char **env)
+{
+	char	*input;
+	char	**local_env;
+
+	local_env = copy_env(env);
+	if (!local_env)
+	{
+		write(2, "Failed to initialize environment\n", 31);
+		exit(1);
+	}
+	(void)argc;
+	(void)argv;
+	setup_signals();
 	while (1)
 	{
 		input = readline("minishell> ");
 		if (!input)
 		{
 			write(1, "exit\n", 5);
-			break;
+			break ;
 		}
-		if (process_input(input))
-			printf("bad input.\n");
 		if (*input)
+		{
 			add_history(input);
+			process_input(input, &local_env);
+		}
 		free(input);
 	}
+	free_env(local_env);
 	rl_clear_history();
-	return 0;
+	return (0);
 }
