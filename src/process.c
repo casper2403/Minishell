@@ -1,25 +1,32 @@
 #include "minishell.h"
+#include <stdio.h>
 
 // split by spaces, keep track of quotes
 // i think this is right
 // look for edge cases
+// goes into infinite loop when given < or >
 int	count_args(char *command)
 {
-	bool	in_s_quote;
-	bool	in_d_quote;
-	int		i;
-	int		count;
+	bool	in_s_quote = false, in_d_quote = false;
+	int		count = 0;
+	int		i = 0;
+	bool	in_word = false;
 
-	in_s_quote = in_d_quote = i = count = 0;
+	in_s_quote = in_d_quote = i = count = in_word = 0;
 	while (command[i])
 	{
-		if ((command[i] == ' ' || command[i] == '<' || command[i] == '>')
-			&& !in_s_quote && !in_d_quote)
+		if (!in_s_quote && !in_d_quote && (command[i] == '<' || command[i] == '>'))
 		{
 			in_word = false;
-			while (command[i] == ' ')
-				i++;
-			continue ;
+			count++;
+			i++;
+			continue;
+		}
+		if (!in_s_quote && !in_d_quote && command[i] == ' ')
+		{
+			in_word = false;
+			i++;
+			continue;
 		}
 		if (!in_word)
 		{
@@ -38,23 +45,39 @@ int	count_args(char *command)
 // split by spaces except for in quotes
 int	split_arguments(char *command, char **argv)
 {
-	bool	in_s_quote;
-	bool	in_d_quote;
-	int		i;
-	int		start;
-	int		j;
+	bool	in_s_quote = false;
+	bool	in_d_quote = false;
+	int		i = 0;
+	int		start = 0;
+	int		j = 0;
 
-	in_s_quote = in_d_quote = i = j = start = 0;
+	// printf("SPLIT TOKENS\n");
 	while (command[i])
 	{
-		if ((command[i] == ' ' || command[i] == '<' || command[i] == '>')
-			&& !in_s_quote && !in_d_quote)
+		if (!in_s_quote && !in_d_quote && (command[i] == '<' || command[i] == '>'))
 		{
-			argv[j++] = ft_substr(command, start, i - start);
-			if (!argv[j - 1]) // CHANGED: check for NULL value
-				return (1);
-			printf("%s\n", argv[j - 1]);
-			start = i + 1;
+			if (i > start)
+			{
+				argv[j++] = ft_substr(command, start, i - start);
+				// printf("%s\n", argv[j - 1]);
+			}
+			argv[j++] = ft_substr(command, i, 1);
+			// printf("%s\n", argv[j - 1]);
+			i++;
+			start = i;
+			continue;
+		}
+		else if (!in_s_quote && !in_d_quote && command[i] == ' ')
+		{
+			if (i > start)
+			{
+				argv[j++] = ft_substr(command, start, i - start);
+				// printf("%s\n", argv[j - 1]);
+			}
+			while (command[i] == ' ')
+				i++;
+			start = i;
+			continue;
 		}
 		if (command[i] == '\'' && !in_d_quote)
 			in_s_quote = !in_s_quote;
@@ -65,10 +88,83 @@ int	split_arguments(char *command, char **argv)
 	if (i > start)
 	{
 		argv[j++] = ft_substr(command, start, i - start);
-		printf("%s\n", argv[j - 1]);
+		// printf("%s\n", argv[j - 1]);
 	}
 	argv[j] = NULL;
+	// printf("------------------------------------------------------");
 	return (in_d_quote || in_s_quote);
+}
+
+int arraylen(char **array)
+{
+	int i;
+
+	i = 0;
+	while (array[i])
+		i++;
+	return (i);
+}
+
+void redo_cmd_arr(char ***command_array, t_token *token, int index, int amount)
+{
+	char **new_command_array;
+	int i;
+	int j;
+
+	i = 0;
+	j = 0;
+	new_command_array = malloc((arraylen(*command_array) - amount + 1) * sizeof(char *));
+	while ((*command_array)[i])
+	{
+		if (i >= index && i < index + amount)
+			;// printf("%s ", (*command_array)[i]);	// insert in redir struct here
+		else
+		{
+			new_command_array[j++] = (*command_array)[i];
+		}
+		i++;
+	}
+	new_command_array[j] = NULL;
+	free(*command_array);
+	*command_array = new_command_array;
+	// printf("\n");
+}
+
+// throw an error when incorrect < or >
+void *cut_redirs(char **command_array, struct s_token *token)
+{
+	int i = 0;
+
+	// printf("\nREDIRS\n");
+	while (command_array[i])
+	{
+		if (command_array[i][0] == '>' || command_array[i][0] == '<')
+		{
+			if (!command_array[i + 1])
+			{
+				fprintf(stderr, "syntax error near unexpected token `newline`\n");
+				return NULL;
+			}
+			if (command_array[i + 1][0] == command_array[i][0])
+			{
+				redo_cmd_arr(&command_array, token, i, 3);
+			}
+			else
+			{
+				redo_cmd_arr(&command_array, token, i, 2);
+			}
+			continue ;
+		}
+		i++;
+	}
+	// printf("------------------------------------------------------\n");
+	// i = 0;
+	// printf("COMMAND_ARRAY NO REDIRS\n");
+	// while (command_array[i])
+		// printf("%s\t", command_array[i++]);
+	// printf("\n------------------------------------------------------\n\n\n\n");
+
+	return NULL;
 }
 
 struct s_token	*lexer(char *split_by_pipe)
@@ -79,7 +175,11 @@ struct s_token	*lexer(char *split_by_pipe)
 	if (!token)
 		return (NULL);
 	token->argv = malloc((count_args(split_by_pipe) + 1) * sizeof(char *));
-	split_arguments(split_by_pipe, token->argv);
+	// printf("ARG_COUNT: %d\n", count_args(split_by_pipe));
+	if(split_arguments(split_by_pipe, token->argv))
+		return(write(1, "unclosed quotes\n", 16), NULL);
+	cut_redirs(token->argv, token);
+
 	// TODO
 	// check all redirectors and keep rest as args
 	// redirectors can be stuck to their args
@@ -284,15 +384,15 @@ int	process_input(char *input, int *last_exit, char ***env)
 
 // TODO
 // PARSER
-// check syntax
+	// check syntax
 
 // TODO
 // EXECUTOR
-// pid_t pid;
-//
-// printf("%s\n", getenv("PATH"));
-// pid = fork();
-// char *command[] = {"/usr/bin/ls", "-l" , "src", NULL};
-// if (pid == 0)
-// 	execve(command[0], command, NULL);
-// wait(NULL);
+	// pid_t pid;
+	//
+	// printf("%s\n", getenv("PATH"));
+	// pid = fork();
+	// char *command[] = {"/usr/bin/ls", "-l" , "src", NULL};
+	// if (pid == 0)
+	// 	execve(command[0], command, NULL);
+	// wait(NULL);

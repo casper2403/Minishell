@@ -12,7 +12,7 @@ EXEC_SRCS	+= src/builtin/builtin_cd.c src/builtin/builtin_echo.c src/builtin/bui
 EXEC_SRCS	+= src/builtin/builtin_exit.c src/builtin/builtin_export.c src/builtin/builtin_pwd.c src/builtin/builtin_unset.c
 
 # Object files in the obj folder (handle subdirectories)
-EXEC_OBJS	= $(patsubst src/%.c,obj/%.o,$(EXEC_SRCS))
+EXEC_OBJS	= $(EXEC_SRCS:src/%.c=obj/%.o)
 
 all:		$(LIBFT) $(NAME_EXEC)
 

@@ -13,9 +13,10 @@ void	ctrl_c_handler(void)
 void	ctrl_backslash_handler(void)
 {
 	// Do absolutely fucking nothin??
-	// rl_replace_line("", 0);
-	// rl_on_new_line();
-	// rl_redisplay();
+	// Makes the backslash display correctly
+	rl_replace_line("", 0);
+	rl_on_new_line();
+	rl_redisplay();
 }
 
 void	signal_handler(int signalnumber)
@@ -122,6 +123,7 @@ int	main(int argc, char **argv, char **env)
 		}
 		if (*input)
 		{
+			// printf("\n\n\n\n");
 			add_history(input);
 			process_input(input, &last_exit, &local_env);
 		}
