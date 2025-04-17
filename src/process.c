@@ -1,5 +1,5 @@
 #include "minishell.h"
-#include <stdio.h>
+#include <stdbool.h>
 
 // split by spaces, keep track of quotes
 // i think this is right
@@ -7,26 +7,32 @@
 // goes into infinite loop when given < or >
 int	count_args(char *command)
 {
-	bool	in_s_quote = false, in_d_quote = false;
-	int		count = 0;
-	int		i = 0;
-	bool	in_word = false;
+	bool	in_s_quote;
+	bool	in_d_quote;
+	int		count;
+	int		i;
+	bool	in_word;
 
-	in_s_quote = in_d_quote = i = count = in_word = 0;
+	in_s_quote = false;
+	in_d_quote = false;
+	i = 0;
+	count = 0;
+	in_word = false;
 	while (command[i])
 	{
-		if (!in_s_quote && !in_d_quote && (command[i] == '<' || command[i] == '>'))
+		if (!in_s_quote && !in_d_quote
+			&& (command[i] == '<' || command[i] == '>'))
 		{
 			in_word = false;
 			count++;
 			i++;
-			continue;
+			continue ;
 		}
 		if (!in_s_quote && !in_d_quote && command[i] == ' ')
 		{
 			in_word = false;
 			i++;
-			continue;
+			continue ;
 		}
 		if (!in_word)
 		{
@@ -43,61 +49,72 @@ int	count_args(char *command)
 }
 
 // split by spaces except for in quotes
-int	split_arguments(char *command, char **argv)
+int split_arguments(char *command, char **argv)
 {
-	bool	in_s_quote = false;
-	bool	in_d_quote = false;
-	int		i = 0;
-	int		start = 0;
-	int		j = 0;
+    bool in_s_quote = false;
+    bool in_d_quote = false;
+    int i = 0;
+    int start = 0;
+    int j = 0;
+    char quote = 0;
 
-	// printf("SPLIT TOKENS\n");
-	while (command[i])
-	{
-		if (!in_s_quote && !in_d_quote && (command[i] == '<' || command[i] == '>'))
-		{
-			if (i > start)
-			{
-				argv[j++] = ft_substr(command, start, i - start);
-				// printf("%s\n", argv[j - 1]);
-			}
-			argv[j++] = ft_substr(command, i, 1);
-			// printf("%s\n", argv[j - 1]);
-			i++;
-			start = i;
-			continue;
-		}
-		else if (!in_s_quote && !in_d_quote && command[i] == ' ')
-		{
-			if (i > start)
-			{
-				argv[j++] = ft_substr(command, start, i - start);
-				// printf("%s\n", argv[j - 1]);
-			}
-			while (command[i] == ' ')
-				i++;
-			start = i;
-			continue;
-		}
-		if (command[i] == '\'' && !in_d_quote)
-			in_s_quote = !in_s_quote;
-		else if (command[i] == '\"' && !in_s_quote)
-			in_d_quote = !in_d_quote;
-		i++;
-	}
-	if (i > start)
-	{
-		argv[j++] = ft_substr(command, start, i - start);
-		// printf("%s\n", argv[j - 1]);
-	}
-	argv[j] = NULL;
-	// printf("------------------------------------------------------");
-	return (in_d_quote || in_s_quote);
+    while (command[i])
+    {
+        if (!in_s_quote && !in_d_quote && (command[i] == '<' || command[i] == '>'))
+        {
+            if (i > start)
+                argv[j++] = ft_substr(command, start, i - start);
+            argv[j++] = ft_substr(command, i, 1);
+            i++;
+            start = i;
+            continue;
+        }
+        else if (!in_s_quote && !in_d_quote && command[i] == ' ')
+        {
+            if (i > start)
+                argv[j++] = ft_substr(command, start, i - start);
+            while (command[i] == ' ')
+                i++;
+            start = i;
+            continue;
+        }
+        if (command[i] == '\'' && !in_d_quote && !in_s_quote)
+        {
+            in_s_quote = true;
+            quote = '\'';
+            i++;
+            start = i;
+            continue;
+        }
+        else if (command[i] == '\"' && !in_s_quote && !in_d_quote)
+        {
+            in_d_quote = true;
+            quote = '\"';
+            i++;
+            start = i;
+            continue;
+        }
+        else if ((command[i] == '\'' && in_s_quote) || (command[i] == '\"' && in_d_quote))
+        {
+            argv[j++] = ft_substr(command, start, i - start);
+            in_s_quote = false;
+            in_d_quote = false;
+            quote = 0;
+            i++;
+            start = i;
+            continue;
+        }
+        i++;
+    }
+    if (i > start)
+        argv[j++] = ft_substr(command, start, i - start);
+    argv[j] = NULL;
+    return (in_d_quote || in_s_quote);
 }
 
-int arraylen(char **array)
+int	arraylen(char **array)
 {
-	int i;
+	int	i;
 
 	i = 0;
 	while (array[i])
@@ -122,6 +139,7 @@ static t_redir_type	get_redir_type(char **cmd, int index)
 	return (REDIR_OUT);
 }
 
+// TODO detect quote on target if needed
 static t_redir	*create_redir(t_redir_type type, char *target)
 {
 	t_redir	*redir;
@@ -136,7 +154,7 @@ static t_redir	*create_redir(t_redir_type type, char *target)
 		free(redir);
 		return (NULL);
 	}
-	redir->quoted = false; // TODO detect quote on target if needed
+	redir->quoted = false;
 	redir->next = NULL;
 	return (redir);
 }
@@ -146,8 +164,7 @@ static void	add_redir(t_token *token, t_redir *new_redir)
 	t_redir	*curr;
 
 	if (!new_redir)
-		return;
-
+		return ;
 	if (!token->redirs)
 		token->redirs = new_redir;
 	else
@@ -159,75 +176,101 @@ static void	add_redir(t_token *token, t_redir *new_redir)
 	}
 }
 
-char **redo_cmd_arr(char ***command_array, t_token *token, int index, int amount)
+int	remove_tokens_from_array(char ***command_array, int start_index, int count)
 {
-	char        **new_command_array;
-	int         i;
-	int         j;
-	t_redir     *redir;
-	int         array_size;
+	int		i;
+	int		len;
+	char	**array;
+	int		j;
 
-	array_size = 0;
-	while ((*command_array)[array_size])
-		array_size++;
-	if (index < 0 || index >= array_size || (index + amount - 1) >= array_size)
-		return NULL;
-	i = j = 0;
-	new_command_array = malloc((array_size - amount + 1) * sizeof(char *));
-	if (!new_command_array)
-		return (NULL);
-	t_redir_type type = get_redir_type(*command_array, index);
-	redir = create_redir(type, (*command_array)[index + amount - 1]);
-	add_redir(token, redir);
-	while ((*command_array)[i])
+	i = 0;
+	j = 0;
+	len = 0;
+	array = *command_array;
+	if (!array)
+		return (0);
+	while (array[len])
+		len++;
+	if (start_index < 0 || start_index + count > len)
+		return (0);
+	while (i < count)
 	{
-		if (i < index || i >= index + amount)
-			new_command_array[j++] = (*command_array)[i];
-		else if (i != index)
-			free((*command_array)[i]);
+		if (array[start_index + i])
+			free(array[start_index + i]);
 		i++;
 	}
-	new_command_array[j] = NULL;
-	free(*command_array);
-	*command_array = new_command_array;
-	return new_command_array;
+	i = start_index;
+	j = start_index + count;
+	while (j < len)
+	{
+		array[i] = array[j];
+		i++;
+		j++;
+	}
+	while (i < len)
+	{
+		array[i] = NULL;
+		i++;
+	}
+	return (1);
 }
 
-// throw an error when incorrect < or >
-void *cut_redirs(char **command_array, struct s_token *token)
+int	process_redirection(char ***command_array,
+						t_token *token, int index, int tokens_to_use)
 {
-	int i = 0;
-	int array_len = 0;
+	t_redir_type	type;
+	t_redir			*redir;
 
+	type = get_redir_type(*command_array, index);
+	redir = create_redir(type, (*command_array)[index + tokens_to_use - 1]);
+	if (!redir)
+		return 0;
+	add_redir(token, redir);
+	return remove_tokens_from_array(command_array, index, tokens_to_use);
+}
+
+int	cut_redirs(char **command_array, struct s_token *token)
+{
+	int i;
+	int len;
+
+	i = 0;
+	len = 0;
 	token->redirs = NULL;
-	while (command_array[array_len])
-		array_len++;
-	i = array_len - 1;
-	while (i >= 0)
-	{
+	while (command_array[len])
+		len++;
+	i = 0;
+	while (i < len) {
 		if (command_array[i][0] == '>' || command_array[i][0] == '<')
 		{
-			if (i + 1 >= array_len)
+			if (i + 1 >= len)
 			{
-				fprintf(stderr, "syntax error near unexpected token `newline`\n");
-				return NULL;
+				ft_putstr_fd("minishell: syntax error near unexpected token `newline`\n", 2);
+				return 0;
 			}
-			if (i + 1 < array_len && command_array[i + 1][0] == command_array[i][0])
-			{
-				redo_cmd_arr(&command_array, token, i, 3);
+			if (i + 1 < len && command_array[i + 1][0] == command_array[i][0]) {
+				if (i + 2 >= len)
+				{
+					ft_putstr_fd("minishell: syntax error near unexpected token `newline`\n", 2);
+					return 0;
+				}
+				if (!process_redirection(&command_array, token, i, 3))
+					return 0;
 			}
 			else
 		{
-				redo_cmd_arr(&command_array, token, i, 2);
+				if (!process_redirection(&command_array, token, i, 2))
+					return 0;
 			}
-			array_len = 0;
-			while (command_array[array_len])
-				array_len++;
-			i = array_len;
+			len = 0;
+			while (command_array[len])
+				len++;
 		}
-		i--;
+		else
+		i++;
 	}
-	return NULL;
+
+	return 1;
 }
 
 struct s_token	*lexer(char *split_by_pipe)
@@ -294,12 +337,16 @@ char	**split_input(char *input)
 	tokenized = malloc((count_pipes(input) + 2) * sizeof(char *));
 	if (!tokenized)
 		return (NULL);
-	in_s_quote = in_d_quote = false;
-	i = 0, j = 0, start = 0;
+	in_s_quote = false;
+	in_d_quote = false;
+	i = 0;
+	j = 0;
+	start = 0;
 	while (input[i])
 	{
 		if (input[i] == '|' && !in_s_quote && !in_d_quote)
 		{
+			tokenized[j++] = ft_substr(input, start, i - start);
 			tokenized[j++] = ft_substr(input, start, i - start);
 			if (!tokenized[j - 1])
 			{
@@ -320,7 +367,7 @@ char	**split_input(char *input)
 			return (NULL);
 		}
 		else
-		{
+	{
 			if (input[i] == '\'' && !in_d_quote)
 				in_s_quote = !in_s_quote;
 			if (input[i] == '\"' && !in_s_quote)
@@ -341,7 +388,7 @@ char	**split_input(char *input)
 }
 
 // CHANGE extra loops toegevoegd voor de memory cleanup.
-
+// TODO for loop norm
 struct s_token	**tokenizer(char *input)
 {
 	int				i;
@@ -355,7 +402,7 @@ struct s_token	**tokenizer(char *input)
 	tokens = malloc((count_pipes(input) + 2) * sizeof(struct s_token *));
 	if (!tokens)
 	{
-		for (int i = 0; divided_input[i]; i++) // TODO for loop norm
+		for (int i = 0; divided_input[i]; i++)
 			free(divided_input[i]);
 		free(divided_input);
 		return (NULL);
@@ -378,65 +425,59 @@ struct s_token	**tokenizer(char *input)
 	return (tokens);
 }
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-int	process_input(char *input, char ***local_env)
-=======
-=======
-
 struct s_token **parser(struct s_token **tokens)
 {
-    // Free original tokens (to avoid leaks)
-    if (tokens)
-        free_lexer(tokens, count_pipes("test") + 1); // Simplified, adjust if needed
+	int		i;
+	t_redir	*redir;
 
-    // Allocate new tokens array (single token for testing)
-    struct s_token **test_tokens = malloc(2 * sizeof(struct s_token *));
-    if (!test_tokens)
-        return NULL;
-
-    // Create test token
-    struct s_token *token = malloc(sizeof(struct s_token));
-    if (!token)
-    {
-        free(test_tokens);
-        return NULL;
-    }
-
-    // Set test token fields
-    token->argv = malloc(3 * sizeof(char *));
-    if (!token->argv)
-    {
-        free(token);
-        free(test_tokens);
-        return NULL;
-    }
-    token->argv[0] = ft_strdup("echo");
-    token->argv[1] = ft_strdup("abcd");
-    token->argv[2] = NULL;
-    if (!token->argv[0] || !token->argv[1])
-    {
-        free(token->argv[0]);
-        free(token->argv[1]);
-        free(token->argv);
-        free(token);
-        free(test_tokens);
-        return NULL;
-    }
-    token->redirs = NULL;
-    token->built_in = true;
-    token->next = NULL;
-
-    // Set test_tokens
-    test_tokens[0] = token;
-    test_tokens[1] = NULL;
-
-    return test_tokens;
+	if (!tokens)
+		return (NULL);
+	i = 0;
+	while (tokens[i])
+	{
+		if (tokens[i]->argv && tokens[i]->argv[0])
+		{
+			if (ft_strcmp(tokens[i]->argv[0], "echo") == 0
+				|| ft_strcmp(tokens[i]->argv[0], "cd") == 0
+				|| ft_strcmp(tokens[i]->argv[0], "pwd") == 0
+				|| ft_strcmp(tokens[i]->argv[0], "export") == 0
+				|| ft_strcmp(tokens[i]->argv[0], "unset") == 0
+				|| ft_strcmp(tokens[i]->argv[0], "env") == 0
+				|| ft_strcmp(tokens[i]->argv[0], "exit") == 0)
+				tokens[i]->built_in = true;
+			else
+				tokens[i]->built_in = false;
+		}
+		redir = tokens[i]->redirs;
+		while (redir)
+		{
+			if (!redir->file || redir->file[0] == '\0')
+			{
+				ft_putstr_fd("minishell: syntax error near unexpected token\n", 2);
+				free_lexer(tokens, i);
+				return (NULL);
+			}
+			if (redir->type == REDIR_HEREDOC)
+			{
+				if (ft_strchr(redir->file, ' ') || ft_strchr(redir->file, '\t'))
+				{
+					ft_putstr_fd("minishell: syntax error in heredoc delimiter\n", 2);
+					free_lexer(tokens, i);
+					return (NULL);
+				}
+				if (redir->file[0] == '\'' || redir->file[0] == '"')
+					redir->quoted = true;
+			}
+			redir = redir->next;
+		}
+		i++;
+	}
+	return (tokens);
 }
 
->>>>>>> b0404b5 (fake parser and echo works)
+// TODO: Add cleanup for tokens after execution
 int	process_input(char *input, int *last_exit, char ***env)
->>>>>>> 24866bc (added some stuff)
+
 {
 	struct s_token	**tokens;
 
@@ -447,22 +488,11 @@ int	process_input(char *input, int *last_exit, char ***env)
 		return (1);
 	}
 	tokens = parser(tokens);
-	
+	if (!tokens)
+	{
+		*last_exit = 1;
+		return (1);
+	}
 	executor(tokens, last_exit, env);
 	return (0);
 }
-
-// TODO
-// PARSER
-	// check syntax
-
-// TODO
-// EXECUTOR
-	// pid_t pid;
-	//
-	// printf("%s\n", getenv("PATH"));
-	// pid = fork();
-	// char *command[] = {"/usr/bin/ls", "-l" , "src", NULL};
-	// if (pid == 0)
-	// 	execve(command[0], command, NULL);
-	// wait(NULL);

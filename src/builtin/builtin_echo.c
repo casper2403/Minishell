@@ -1,5 +1,7 @@
-#include "minishell.h"
+#include "../minishell.h"
 
+
+//TODO should call expand_variables to check for $
 static	int		args_counter(char **argv)
 {
 	int		count;
@@ -14,6 +16,7 @@ int				builtin_echo(char **argv)
 {
 	int		i;
 	int		n_check;
+	char *expanded;
 
 	i = 1;
 	n_check = 0;
@@ -26,7 +29,9 @@ int				builtin_echo(char **argv)
 		}
 		while (argv[i])
 		{
-			ft_putstr_fd(argv[i], 1);
+			expanded = expand_variables(argv[i], 0); // last_exit not directly available
+        	ft_putstr_fd(expanded, 1);
+        	free(expanded);
 			if (argv[i + 1] && argv[i][0] != '\0')
 				write(1, " ", 1);
 			i++;

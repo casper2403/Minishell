@@ -1,6 +1,6 @@
 #include "minishell.h"
 
-static volatile int	signal_received = 0;
+static volatile int	g_signal_received = 0;
 
 void	ctrl_c_handler(void)
 {
@@ -12,8 +12,6 @@ void	ctrl_c_handler(void)
 
 void	ctrl_backslash_handler(void)
 {
-	// Do absolutely fucking nothin??
-	// Makes the backslash display correctly
 	rl_replace_line("", 0);
 	rl_on_new_line();
 	rl_redisplay();
@@ -21,14 +19,14 @@ void	ctrl_backslash_handler(void)
 
 void	signal_handler(int signalnumber)
 {
-	if (signal_received)
+	if (g_signal_received)
 		return ;
-	signal_received = 1;
+	g_signal_received = 1;
 	if (signalnumber == SIGINT)
 		ctrl_c_handler();
 	if (signalnumber == SIGQUIT)
 		ctrl_backslash_handler();
-	signal_received = 0;
+	g_signal_received = 0;
 }
 
 // CHANGE sigaction gebruikt ipv signal.
@@ -123,7 +121,6 @@ int	main(int argc, char **argv, char **env)
 		}
 		if (*input)
 		{
-			// printf("\n\n\n\n");
 			add_history(input);
 			process_input(input, &last_exit, &local_env);
 		}

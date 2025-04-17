@@ -10,6 +10,7 @@
 # include <stdlib.h>
 # include <sys/wait.h>
 # include <unistd.h>
+# include <fcntl.h>
 
 typedef enum e_redir_type
 {
@@ -52,5 +53,6 @@ int builtin_unset(char **argv, char ***env);
 int builtin_env(char **argv, char ***env);
 int builtin_exit(char **argv);
 
+char	*expand_variables(char *str, int last_exit);
 
 #endif

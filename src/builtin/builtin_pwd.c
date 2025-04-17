@@ -1,5 +1,4 @@
-#include "minishell.h"
-
+#include "../minishell.h"
 
 //TODO remove printf
 int builtin_pwd(char **argv) {

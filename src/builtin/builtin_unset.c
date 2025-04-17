@@ -1,6 +1,88 @@
-#include "minishell.h"
+#include "../minishell.h"
 
-int builtin_unset(char **argv, char ***env) 
+static int	is_valid_var_name(char *name)
 {
-    return (0);
+	int	i;
+
+	if (!name || !*name || (!ft_isalpha(*name) && *name != '_'))
+		return (0);
+	i = 1;
+	while (name[i])
+	{
+		if (!ft_isalnum(name[i]) && name[i] != '_')
+			return (0);
+		i++;
+	}
+	return (1);
+}
+
+static int	find_env_var(char *var_name, char **env)
+{
+	int	i;
+	int	len;
+
+	i = 0;
+	len = ft_strlen(var_name);
+	while (env[i])
+	{
+		if (ft_strncmp(env[i], var_name, len) == 0 && 
+			(env[i][len] == '=' || env[i][len] == '\0'))
+			return (i);
+		i++;
+	}
+	return (-1);
+}
+
+static int	remove_env_var(char *var_name, char ***env)
+{
+	int		index;
+	int		i;
+	int		j;
+	char	**new_env;
+
+	index = find_env_var(var_name, *env);
+	if (index < 0)
+		return (0);
+	i = 0;
+	while ((*env)[i])
+		i++;
+	new_env = malloc(i * sizeof(char *));
+	if (!new_env)
+		return (1);
+	j = 0;
+	for (i = 0; (*env)[i]; i++)
+	{
+		if (i != index)
+			new_env[j++] = (*env)[i];
+	}
+	new_env[j] = NULL;
+	free((*env)[index]);
+	free(*env);
+	*env = new_env;
+	return (0);
+}
+
+int	builtin_unset(char **argv, char ***env)
+{
+	int	i;
+	int	ret;
+
+	ret = 0;
+	if (!argv[1])
+		return (0);
+	i = 1;
+	while (argv[i])
+	{
+		if (!is_valid_var_name(argv[i]))
+		{
+			ft_putstr_fd("minishell: unset: `", 2);
+			ft_putstr_fd(argv[i], 2);
+			ft_putendl_fd("': not a valid identifier", 2);
+			ret = 1;
+		}
+		else if (remove_env_var(argv[i], env))
+			ret = 1;
+		i++;
+	}
+	return (ret);
 }

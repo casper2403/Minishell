@@ -1,4 +1,4 @@
-#include "minishell.h"
+#include "../minishell.h"
 
 //TODO remove prinf
 int builtin_exit(char **argv) {
