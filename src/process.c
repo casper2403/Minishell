@@ -105,65 +105,128 @@ int arraylen(char **array)
 	return (i);
 }
 
-void redo_cmd_arr(char ***command_array, t_token *token, int index, int amount)
+static t_redir_type	get_redir_type(char **cmd, int index)
 {
-	char **new_command_array;
-	int i;
-	int j;
+	if (cmd[index][0] == '<')
+	{
+		if (cmd[index + 1] && cmd[index + 1][0] == '<')
+			return (REDIR_HEREDOC);
+		return (REDIR_IN);
+	}
+	if (cmd[index][0] == '>')
+	{
+		if (cmd[index + 1] && cmd[index + 1][0] == '>')
+			return (REDIR_APPEND);
+		return (REDIR_OUT);
+	}
+	return (REDIR_OUT);
+}
 
-	i = 0;
-	j = 0;
-	new_command_array = malloc((arraylen(*command_array) - amount + 1) * sizeof(char *));
+static t_redir	*create_redir(t_redir_type type, char *target)
+{
+	t_redir	*redir;
+
+	redir = malloc(sizeof(t_redir));
+	if (!redir)
+		return (NULL);
+	redir->type = type;
+	redir->file = strdup(target);
+	if (!redir->file)
+	{
+		free(redir);
+		return (NULL);
+	}
+	redir->quoted = false; // TODO detect quote on target if needed
+	redir->next = NULL;
+	return (redir);
+}
+
+static void	add_redir(t_token *token, t_redir *new_redir)
+{
+	t_redir	*curr;
+
+	if (!new_redir)
+		return;
+
+	if (!token->redirs)
+		token->redirs = new_redir;
+	else
+	{
+		curr = token->redirs;
+		while (curr->next)
+			curr = curr->next;
+		curr->next = new_redir;
+	}
+}
+
+char **redo_cmd_arr(char ***command_array, t_token *token, int index, int amount)
+{
+	char        **new_command_array;
+	int         i;
+	int         j;
+	t_redir     *redir;
+	int         array_size;
+
+	array_size = 0;
+	while ((*command_array)[array_size])
+		array_size++;
+	if (index < 0 || index >= array_size || (index + amount - 1) >= array_size)
+		return NULL;
+	i = j = 0;
+	new_command_array = malloc((array_size - amount + 1) * sizeof(char *));
+	if (!new_command_array)
+		return (NULL);
+	t_redir_type type = get_redir_type(*command_array, index);
+	redir = create_redir(type, (*command_array)[index + amount - 1]);
+	add_redir(token, redir);
 	while ((*command_array)[i])
 	{
-		if (i >= index && i < index + amount)
-			;// printf("%s ", (*command_array)[i]);	// insert in redir struct here
-		else
-		{
+		if (i < index || i >= index + amount)
 			new_command_array[j++] = (*command_array)[i];
-		}
+		else if (i != index)
+			free((*command_array)[i]);
 		i++;
 	}
 	new_command_array[j] = NULL;
 	free(*command_array);
 	*command_array = new_command_array;
-	// printf("\n");
+	return new_command_array;
 }
 
 // throw an error when incorrect < or >
 void *cut_redirs(char **command_array, struct s_token *token)
 {
 	int i = 0;
+	int array_len = 0;
 
-	// printf("\nREDIRS\n");
-	while (command_array[i])
+	token->redirs = NULL;
+	while (command_array[array_len])
+		array_len++;
+	i = array_len - 1;
+	while (i >= 0)
 	{
 		if (command_array[i][0] == '>' || command_array[i][0] == '<')
 		{
-			if (!command_array[i + 1])
+			if (i + 1 >= array_len)
 			{
 				fprintf(stderr, "syntax error near unexpected token `newline`\n");
 				return NULL;
 			}
-			if (command_array[i + 1][0] == command_array[i][0])
+			if (i + 1 < array_len && command_array[i + 1][0] == command_array[i][0])
 			{
 				redo_cmd_arr(&command_array, token, i, 3);
 			}
 			else
-			{
+		{
 				redo_cmd_arr(&command_array, token, i, 2);
 			}
-			continue ;
+			array_len = 0;
+			while (command_array[array_len])
+				array_len++;
+			i = array_len;
 		}
-		i++;
+		i--;
 	}
-	// printf("------------------------------------------------------\n");
-	// i = 0;
-	// printf("COMMAND_ARRAY NO REDIRS\n");
-	// while (command_array[i])
-		// printf("%s\t", command_array[i++]);
-	// printf("\n------------------------------------------------------\n\n\n\n");
-
 	return NULL;
 }
 
@@ -174,16 +237,23 @@ struct s_token	*lexer(char *split_by_pipe)
 	token = malloc(sizeof(struct s_token));
 	if (!token)
 		return (NULL);
+	token->redirs = NULL;
+	token->next = NULL;
+	token->built_in = false;
 	token->argv = malloc((count_args(split_by_pipe) + 1) * sizeof(char *));
-	// printf("ARG_COUNT: %d\n", count_args(split_by_pipe));
-	if(split_arguments(split_by_pipe, token->argv))
-		return(write(1, "unclosed quotes\n", 16), NULL);
+	if (!token->argv)
+	{
+		free(token);
+		return (NULL);
+	}
+	if (split_arguments(split_by_pipe, token->argv))
+	{
+		write(1, "unclosed quotes\n", 16);
+		free(token->argv);
+		free(token);
+		return NULL;
+	}
 	cut_redirs(token->argv, token);
-
-	// TODO
-	// check all redirectors and keep rest as args
-	// redirectors can be stuck to their args
-	// make sure that everything is malloced
 	return (token);
 }
 

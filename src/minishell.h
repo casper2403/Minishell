@@ -37,6 +37,7 @@ typedef struct s_token
 
 int					process_input(char *input, int *last_exit, char ***env);
 void				free_lexer(struct s_token **tokens, int i);
+void free_char_array(char **array);
 
 
 //executor 

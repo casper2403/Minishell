@@ -4,21 +4,41 @@ Some intro...
 
 ## TODO
 <!-- TODO-START -->
-- `./src/process.c:10`
+- `./src/free_functions.c:5`
+```c
+free insides too!
+```
+
+
+- `./src/process.c:183`
 ```c
 check all redirectors and keep rest as args
+redirectors can be stuck to their args
 make sure that everything is malloced
 ```
 
 
-- `./src/process.c:98`
+- `./src/process.c:190`
+```c
+incorrect! should keep track of quotes!
+check if full fixed
+```
+
+
+- `./src/process.c:286`
+```c
+for loop norm
+```
+
+
+- `./src/process.c:376`
 ```c
 PARSER
 check syntax
 ```
 
 
-- `./src/process.c:102`
+- `./src/process.c:380`
 ```c
 EXECUTOR
 pid_t pid;
@@ -32,9 +52,15 @@ wait(NULL);
 ```
 
 
-- `./src/free_functions.c:5`
+- `./src/builtin/builtin_exit.c:3`
 ```c
-free insides too!
+remove prinf
+```
+
+
+- `./src/builtin/builtin_pwd.c:4`
+```c
+remove printf
 ```
 
 
