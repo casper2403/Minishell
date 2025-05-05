@@ -1,27 +1,29 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   builtin_env.c                                      :+:      :+:    :+:   */
+/*   loop.c                                             :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: cstevens <cstevens@student.s19.be>         +#+  +:+       +#+        */
+/*   By: lalex-ku <lalex-ku@42sp.org.br>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2025/05/08 10:50:00 by cstevens          #+#    #+#             */
-/*   Updated: 2025/05/08 10:50:01 by cstevens         ###   ########.fr       */
+/*   Created: 2022/06/22 17:32:45 by lalex-ku          #+#    #+#             */
+/*   Updated: 2022/06/22 17:32:50 by lalex-ku         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "../minishell.h"
+#include <fcntl.h>
+#include <stdio.h>
+#include <unistd.h>
 
-int	builtin_env(char **argv, char ***env)
+int	main(int argc, char const *argv[])
 {
-	int	i;
+	int	pid;
 
-	(void)argv;
-	i = 0;
-	while ((*env)[i])
+	pid = fork();
+	open("infile", O_RDONLY);
+	while (1)
 	{
-		printf("%s\n", (*env)[i]);
-		i++;
+		printf("Helloo miniHELL %i\n", pid);
+		sleep(1);
 	}
 	return (0);
 }

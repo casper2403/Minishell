@@ -1,27 +1,26 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   builtin_env.c                                      :+:      :+:    :+:   */
+/*   parser_utils.c                                     :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: cstevens <cstevens@student.s19.be>         +#+  +:+       +#+        */
+/*   By: cstevens <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2025/05/08 10:50:00 by cstevens          #+#    #+#             */
-/*   Updated: 2025/05/08 10:50:01 by cstevens         ###   ########.fr       */
+/*   Created: 2025/05/09 16:30:21 by cstevens          #+#    #+#             */
+/*   Updated: 2025/05/09 16:30:22 by cstevens         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "../minishell.h"
+#include "minishell.h"
 
-int	builtin_env(char **argv, char ***env)
+int	is_builtin(const char *cmd)
 {
-	int	i;
+	const char	*builtins[] = {"echo", "cd", "pwd", "export",
+		"unset", "env", "exit", NULL};
+	int			i;
 
-	(void)argv;
-	i = 0;
-	while ((*env)[i])
-	{
-		printf("%s\n", (*env)[i]);
-		i++;
-	}
+	i = -1;
+	while (builtins[++i])
+		if (ft_strcmp(cmd, builtins[i]) == 0)
+			return (1);
 	return (0);
 }

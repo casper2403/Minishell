@@ -1,3 +1,15 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   free_functions.c                                   :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: cstevens <cstevens@student.s19.be>         +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2025/05/08 10:48:57 by cstevens          #+#    #+#             */
+/*   Updated: 2025/05/08 10:48:59 by cstevens         ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
 #include "minishell.h"
 
 void	free_redirs(t_redir *redir)
@@ -16,30 +28,36 @@ void	free_redirs(t_redir *redir)
 
 void	free_lexer(struct s_token **tokens, int i)
 {
-	while (i >= 0)
+	int		j;
+	t_redir	*redir;
+	t_redir	*next;
+
+	while (i--)
 	{
-		if (tokens[i])
+		j = 0;
+		while (tokens[i]->argv && tokens[i]->argv[j])
+			free(tokens[i]->argv[j++]);
+		free(tokens[i]->argv);
+		free(tokens[i]->quoted);
+		redir = tokens[i]->redirs;
+		while (redir)
 		{
-			if (tokens[i]->argv)
-				free_char_array(tokens[i]->argv);
-			
-			if (tokens[i]->redirs)
-				free_redirs(tokens[i]->redirs);
-			
-			free(tokens[i]);
+			next = redir->next;
+			free(redir->file);
+			free(redir);
+			redir = next;
 		}
-		i--;
+		free(tokens[i]);
 	}
 	free(tokens);
 }
 
-void free_char_array(char **array)
+void	free_char_array(char **array)
 {
-	int i;
+	int	i;
 
 	i = 0;
 	while (array[i])
 		free(array[i++]);
 	free(array);
 }
-

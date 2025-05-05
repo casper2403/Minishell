@@ -1,42 +1,16 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   builtin_export.c                                   :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: cstevens <cstevens@student.s19.be>         +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2025/05/08 10:50:16 by cstevens          #+#    #+#             */
+/*   Updated: 2025/05/08 10:50:17 by cstevens         ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
 #include "../minishell.h"
-
-static int	is_valid_var_name(char *name)
-{
-	int	i;
-	int	equal_pos;
-
-	if (!name || !*name)
-		return (0);
-	equal_pos = 0;
-	while (name[equal_pos] && name[equal_pos] != '=')
-		equal_pos++;
-	if (equal_pos == 0 || (!ft_isalpha(name[0]) && name[0] != '_'))
-		return (0);
-	i = 1;
-	while (i < equal_pos)
-	{
-		if (!ft_isalnum(name[i]) && name[i] != '_')
-			return (0);
-		i++;
-	}
-	return (1);
-}
-
-static int	env_var_cmp(char *s1, char *s2)
-{
-	int	i;
-
-	i = 0;
-	while (s1[i] && s2[i] && s1[i] == s2[i] && s1[i] != '=' && s2[i] != '=')
-		i++;
-	if ((s1[i] == '=' || !s1[i]) && (s2[i] == '=' || !s2[i]))
-		return (0);
-	if (s1[i] == '=' || !s1[i])
-		return (-1);
-	if (s2[i] == '=' || !s2[i])
-		return (1);
-	return (s1[i] - s2[i]);
-}
 
 static char	**sort_env(char **env)
 {
@@ -60,8 +34,7 @@ static char	**sort_env(char **env)
 		{
 			while (--i >= 0)
 				free(sorted[i]);
-			free(sorted);
-			return (NULL);
+			return (free(sorted), NULL);
 		}
 		i++;
 	}
@@ -96,8 +69,8 @@ static int	find_env_var(char *var, char **env)
 		len++;
 	while (env[i])
 	{
-		if (ft_strncmp(env[i], var, len) == 0 && 
-			(env[i][len] == '=' || env[i][len] == '\0'))
+		if (ft_strncmp(env[i], var, len) == 0
+			&& (env[i][len] == '=' || env[i][len] == '\0'))
 			return (i);
 		i++;
 	}
@@ -108,12 +81,14 @@ static int	add_env_var(char *var, char ***env)
 {
 	int		index;
 	int		i;
+	int		j;
 	char	**new_env;
-	
+	char	*new_var;
+
 	index = find_env_var(var, *env);
 	if (index >= 0)
 	{
-		char *new_var = ft_strdup(var);
+		new_var = ft_strdup(var);
 		if (!new_var)
 			return (1);
 		free((*env)[index]);
@@ -126,14 +101,15 @@ static int	add_env_var(char *var, char ***env)
 	new_env = malloc((i + 2) * sizeof(char *));
 	if (!new_env)
 		return (1);
-	for (int j = 0; j < i; j++)
+	j = 0;
+	while (j < i)
+	{
 		new_env[j] = (*env)[j];
+		j++;
+	}
 	new_env[i] = ft_strdup(var);
 	if (!new_env[i])
-	{
-		free(new_env);
-		return (1);
-	}
+		return (free(new_env), 1);
 	new_env[i + 1] = NULL;
 	free(*env);
 	*env = new_env;
@@ -149,7 +125,7 @@ static void	print_export_list(char **env)
 
 	sorted = sort_env(env);
 	if (!sorted)
-		return;
+		return ;
 	i = 0;
 	while (sorted[i])
 	{
@@ -164,14 +140,14 @@ static void	print_export_list(char **env)
 				j++;
 				while (sorted[i][j])
 				{
-					if (sorted[i][j] == '\"' || sorted[i][j] == '\\' || 
+					if (sorted[i][j] == '\"' || sorted[i][j] == '\\' ||
 						sorted[i][j] == '$')
 						ft_putchar_fd('\\', 1);
 					ft_putchar_fd(sorted[i][j], 1);
 					j++;
 				}
 				ft_putchar_fd('\"', 1);
-				break;
+				break ;
 			}
 			ft_putchar_fd(sorted[i][j], 1);
 			j++;
@@ -192,15 +168,12 @@ int	builtin_export(char **argv, char ***env)
 	int	ret;
 
 	if (!argv[1])
-	{
-		print_export_list(*env);
-		return (0);
-	}
+		return (print_export_list(*env), 0);
 	ret = 0;
 	i = 1;
 	while (argv[i])
 	{
-		if (is_valid_var_name(argv[i]))
+		if (exp_is_valid_var_name(argv[i]))
 		{
 			if (add_env_var(argv[i], env))
 				ret = 1;

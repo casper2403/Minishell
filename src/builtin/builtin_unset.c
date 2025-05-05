@@ -1,3 +1,15 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   builtin_unset.c                                    :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: cstevens <cstevens@student.s19.be>         +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2025/05/08 10:50:37 by cstevens          #+#    #+#             */
+/*   Updated: 2025/05/08 10:50:38 by cstevens         ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
 #include "../minishell.h"
 
 static int	is_valid_var_name(char *name)
@@ -25,8 +37,8 @@ static int	find_env_var(char *var_name, char **env)
 	len = ft_strlen(var_name);
 	while (env[i])
 	{
-		if (ft_strncmp(env[i], var_name, len) == 0 && 
-			(env[i][len] == '=' || env[i][len] == '\0'))
+		if (ft_strncmp(env[i], var_name, len) == 0
+			&& (env[i][len] == '=' || env[i][len] == '\0'))
 			return (i);
 		i++;
 	}
@@ -35,13 +47,13 @@ static int	find_env_var(char *var_name, char **env)
 
 static int	remove_env_var(char *var_name, char ***env)
 {
-	int		index;
+	int		ix;
 	int		i;
 	int		j;
 	char	**new_env;
 
-	index = find_env_var(var_name, *env);
-	if (index < 0)
+	ix = find_env_var(var_name, *env);
+	if (ix < 0)
 		return (0);
 	i = 0;
 	while ((*env)[i])
@@ -50,16 +62,14 @@ static int	remove_env_var(char *var_name, char ***env)
 	if (!new_env)
 		return (1);
 	j = 0;
-	for (i = 0; (*env)[i]; i++)
+	i = 0;
+	while ((*env)[i])
 	{
-		if (i != index)
+		if (i != ix)
 			new_env[j++] = (*env)[i];
+		i++;
 	}
-	new_env[j] = NULL;
-	free((*env)[index]);
-	free(*env);
-	*env = new_env;
-	return (0);
+	return (new_env[j] = NULL, free((*env)[ix]), free(*env), *env = new_env, 0);
 }
 
 int	builtin_unset(char **argv, char ***env)

@@ -1,41 +1,40 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   builtin_echo.c                                     :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: cstevens <cstevens@student.s19.be>         +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2025/05/08 10:49:54 by cstevens          #+#    #+#             */
+/*   Updated: 2025/05/08 10:49:55 by cstevens         ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
 #include "../minishell.h"
 
-
-//TODO should call expand_variables to check for $
-static	int		args_counter(char **argv)
-{
-	int		count;
-
-	count = 0;
-	while (argv[count])
-		count++;
-	return (count);
-}
-
-int				builtin_echo(char **argv)
+int	builtin_echo(char **argv, bool *quoted, int last_exit)
 {
 	int		i;
 	int		n_check;
-	char *expanded;
+	char	*expanded;
 
-	i = 1;
+	i = 0;
 	n_check = 0;
-	if (args_counter(argv) > 1)
+	while (argv[++i] && ft_strcmp(argv[i], "-n") == 0)
+		n_check = 1;
+	while (argv[i])
 	{
-		while (argv[i] && ft_strcmp(argv[i], "-n") == 0)
+		if (quoted && quoted[i])
+			ft_putstr_fd(argv[i], 1);
+		else
 		{
-			n_check = 1;
-			i++;
+			expanded = expand_variables(argv[i], last_exit);
+			ft_putstr_fd(expanded, 1);
+			free(expanded);
 		}
-		while (argv[i])
-		{
-			expanded = expand_variables(argv[i], 0); // last_exit not directly available
-        	ft_putstr_fd(expanded, 1);
-        	free(expanded);
-			if (argv[i + 1] && argv[i][0] != '\0')
-				write(1, " ", 1);
-			i++;
-		}
+		if (argv[i + 1] && argv[i][0] != '\0')
+			write(1, " ", 1);
+		i++;
 	}
 	if (n_check == 0)
 		write(1, "\n", 1);

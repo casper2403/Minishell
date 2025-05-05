@@ -1,3 +1,15 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   main.c                                             :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: cstevens <cstevens@student.s19.be>         +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2025/05/08 10:49:06 by cstevens          #+#    #+#             */
+/*   Updated: 2025/05/08 10:49:08 by cstevens         ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
 #include "minishell.h"
 
 static volatile int	g_signal_received = 0;
@@ -60,6 +72,7 @@ static char	**copy_env(char **env)
 {
 	int		count;
 	char	**new_env;
+	int		i;
 
 	count = 0;
 	while (env[count])
@@ -67,7 +80,8 @@ static char	**copy_env(char **env)
 	new_env = malloc((count + 1) * sizeof(char *));
 	if (!new_env)
 		return (NULL);
-	for (int i = 0; i < count; i++)
+	i = 0;
+	while (i < count)
 	{
 		new_env[i] = ft_strdup(env[i]);
 		if (!new_env[i])
@@ -77,6 +91,7 @@ static char	**copy_env(char **env)
 			free(new_env);
 			return (NULL);
 		}
+		i++;
 	}
 	new_env[count] = NULL;
 	return (new_env);
@@ -99,7 +114,7 @@ int	main(int argc, char **argv, char **env)
 {
 	char	*input;
 	char	**local_env;
-	int last_exit;
+	int		last_exit;
 
 	last_exit = 0;
 	local_env = copy_env(env);

@@ -1,90 +1,24 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   executor.c                                         :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: cstevens <cstevens@student.s19.be>         +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2025/05/08 10:48:13 by cstevens          #+#    #+#             */
+/*   Updated: 2025/05/08 10:48:18 by cstevens         ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
 #include "minishell.h"
-
-/* Extract variable name from string */
-static char	*get_var_name(char *str)
-{
-	int	i;
-
-	i = 0;
-	while (str[i] && (ft_isalnum(str[i]) || str[i] == '_'))
-		i++;
-	return (ft_substr(str, 0, i));
-}
-
-/* Append src to *dest, free old */
-static void	append_str(char **dest, const char *src)
-{
-	char	*old;
-
-	old = *dest;
-	*dest = ft_strjoin(old, src);
-	free(old);
-}
-
-/* Append single char to *dest */
-static void	append_char(char **dest, char c)
-{
-	char	tmp[2];
-
-	tmp[0] = c;
-	tmp[1] = '\0';
-	append_str(dest, tmp);
-}
-
-/* Extract $VAR or $? value, set len */
-static char	*extract_value(const char *s, int *len, int last_exit)
-{
-	char	*var;
-	char	*val;
-
-	if (s[1] == '?')
-	{
-		*len = 2;
-		return (ft_itoa(last_exit));
-	}
-	var = get_var_name((char *)s + 1);
-	val = getenv(var);
-	*len = ft_strlen(var) + 1;
-	free(var);
-	if (val)
-		return (ft_strdup(val));
-	else
-		return (ft_strdup(""));
-}
-
-char	*expand_variables(char *str, int last_exit)
-{
-	char	*res;
-	int		i;
-	int		len;
-	char	*v;
-
-	res = ft_strdup("");
-	i = 0;
-	while (str[i])
-	{
-		if (str[i] == '$' && str[i + 1])
-		{
-			v = extract_value(str + i, &len, last_exit);
-			append_str(&res, v);
-			free(v);
-			i += len;
-		}
-		else
-		{
-			append_char(&res, str[i]);
-			i++;
-		}
-	}
-	return (res);
-}
 
 int	execute_builtin(struct s_token *token, int *last_exit, char ***env)
 {
 	if (!token || !token->argv || !token->argv[0])
 		return (*last_exit = 1);
 	if (ft_strcmp(token->argv[0], "echo") == 0)
-		return (*last_exit = builtin_echo(token->argv));
+		return (*last_exit = builtin_echo(token->argv,
+				token->quoted, *last_exit));
 	if (ft_strcmp(token->argv[0], "cd") == 0)
 		return (*last_exit = builtin_cd(token->argv, env));
 	if (ft_strcmp(token->argv[0], "pwd") == 0)
@@ -96,9 +30,10 @@ int	execute_builtin(struct s_token *token, int *last_exit, char ***env)
 	if (ft_strcmp(token->argv[0], "env") == 0)
 		return (*last_exit = builtin_env(token->argv, env));
 	if (ft_strcmp(token->argv[0], "exit") == 0)
-		builtin_exit(token->argv);
+		return (builtin_exit(token->argv));
 	return (*last_exit = 0);
 }
+
 /* Search cmd in dirs array */
 static char	*search_in_dirs(char *cmd, char **dirs)
 {
@@ -129,6 +64,8 @@ char	*find_executable(char *cmd, char **env)
 
 	if (!cmd || !*cmd)
 		return (NULL);
+	if (cmd[0] == '/' || cmd[0] == '.' || cmd[0] == '~')
+		return (ft_strdup(cmd));
 	if (access(cmd, X_OK) == 0)
 		return (ft_strdup(cmd));
 	path = getenv("PATH");
@@ -181,14 +118,14 @@ static int	handle_heredoc(t_redir *r, int last_exit)
 }
 
 /* Setup redirections */
-static void	setup_redirections(t_redir *r, int last_exit)
+static int	setup_redirections(t_redir *r, int *last_exit)
 {
 	int	fd;
 
 	while (r)
 	{
 		if (r->type == REDIR_HEREDOC)
-			fd = handle_heredoc(r, last_exit);
+			fd = handle_heredoc(r, *last_exit);
 		else if (r->type == REDIR_IN)
 			fd = open(r->file, O_RDONLY);
 		else if (r->type == REDIR_OUT)
@@ -197,8 +134,14 @@ static void	setup_redirections(t_redir *r, int last_exit)
 			fd = open(r->file, O_WRONLY | O_CREAT | O_APPEND, 0644);
 		if (fd < 0)
 		{
-			perror(r->file);
-			exit(1);
+			ft_putstr_fd("minishell: ", 2);
+			ft_putstr_fd(r->file, 2);
+			if (errno == EACCES)
+				ft_putstr_fd(": Permission denied\n", 2);
+			else
+				ft_putstr_fd(": No such file or directory\n", 2);
+			*last_exit = 1;
+			return (1);
 		}
 		if (r->type == REDIR_IN || r->type == REDIR_HEREDOC)
 			dup2(fd, STDIN_FILENO);
@@ -207,6 +150,7 @@ static void	setup_redirections(t_redir *r, int last_exit)
 		close(fd);
 		r = r->next;
 	}
+	return (0);
 }
 
 /* Child execution */
@@ -216,6 +160,8 @@ static void	exec_child(struct s_token *token, int *last_exit, char **env)
 
 	if (token->built_in)
 		exit(execute_builtin(token, last_exit, &env));
+	if (!token->argv[0] || !token->argv[0][0])
+		exit(0);
 	path = find_executable(token->argv[0], env);
 	if (!path)
 	{
@@ -224,19 +170,33 @@ static void	exec_child(struct s_token *token, int *last_exit, char **env)
 		exit(127);
 	}
 	execve(path, token->argv, env);
+	if (errno == EISDIR)
+	{
+		write(2, token->argv[0], ft_strlen(token->argv[0]));
+		write(2, ": Is a directory\n", 17);
+		free(path);
+		exit(126);
+	}
+	if (errno == EACCES)
+	{
+		write(2, token->argv[0], ft_strlen(token->argv[0]));
+		write(2, ": Permission denied\n", 20);
+		free(path);
+		exit(126);
+	}
+	write(2, token->argv[0], ft_strlen(token->argv[0]));
+	write(2, ": ", 2);
+	perror("");
 	free(path);
-	perror(token->argv[0]);
 	exit(126);
 }
 
 /* Fork and execute process */
 static int	fork_and_execute(t_redir *r, struct s_token *token, int *last_exit,
-		int in_fd, int out_fd, char **env)
+							int in_fd, int out_fd, char **env, pid_t *pid)
 {
-	pid_t	pid;
-
-	pid = fork();
-	if (pid == 0)
+	*pid = fork();
+	if (*pid == 0)
 	{
 		if (in_fd != STDIN_FILENO)
 		{
@@ -248,47 +208,82 @@ static int	fork_and_execute(t_redir *r, struct s_token *token, int *last_exit,
 			dup2(out_fd, STDOUT_FILENO);
 			close(out_fd);
 		}
-		if (r)
-			setup_redirections(r, *last_exit);
+		if (r && setup_redirections(r, last_exit))
+			exit(*last_exit);
 		exec_child(token, last_exit, env);
 	}
 	if (in_fd != STDIN_FILENO)
 		close(in_fd);
 	if (out_fd != STDOUT_FILENO)
 		close(out_fd);
-	waitpid(pid, last_exit, 0);
-	*last_exit = WEXITSTATUS(*last_exit);
-	return (*last_exit);
-}
-
-int	execute_command(struct s_token *token, int *last_exit, int in_fd,
-		int out_fd, char **env)
-{
-	if (token->built_in && in_fd == STDIN_FILENO && out_fd == STDOUT_FILENO
-		&& !token->redirs)
-		return (execute_builtin(token, last_exit, &env));
-	return (fork_and_execute(token->redirs, token, last_exit, in_fd, out_fd,
-			env));
+	return (0);
 }
 
 int	executor(struct s_token **tokens, int *last_exit, char ***env)
 {
-	int	in_fd;
-	int	i;
-	int	pipe_fd[2];
-	int	out_fd;
+	int		in_fd;
+	int		pipe_fd[2];
+	int		out_fd;
+	pid_t	*pids;
+	int		cmd_count;
+	int		i;
 
+	out_fd = STDOUT_FILENO;
 	in_fd = STDIN_FILENO;
+	cmd_count = 0;
+	while (tokens[cmd_count])
+		cmd_count++;
+	pids = malloc(cmd_count * sizeof(pid_t));
+	if (!pids)
+		return (*last_exit = 1);
 	i = 0;
-	while (tokens[i])
+	while (i < cmd_count)
 	{
-		out_fd = STDOUT_FILENO;
-		if (tokens[i + 1] && pipe(pipe_fd) == 0)
+		pipe_fd[0] = -1;
+		if (tokens[i + 1])
+		{
+			if (pipe(pipe_fd) != 0)
+			{
+				free(pids);
+				return (*last_exit = 1);
+			}
 			out_fd = pipe_fd[1];
-		execute_command(tokens[i], last_exit, in_fd, out_fd, *env);
+		}
+		else
+			out_fd = STDOUT_FILENO;
+		if (tokens[i]->built_in && in_fd == STDIN_FILENO
+			&& out_fd == STDOUT_FILENO && !tokens[i]->redirs)
+		{
+			execute_builtin(tokens[i], last_exit, env);
+			pids[i] = 0;
+		}
+		else
+		{
+			fork_and_execute(tokens[i]->redirs, tokens[i], last_exit,
+				in_fd, out_fd, *env, &pids[i]);
+		}
+		if (in_fd != STDIN_FILENO)
+			close(in_fd);
 		if (tokens[i + 1])
 			in_fd = pipe_fd[0];
+		else
+			in_fd = STDIN_FILENO;
+		if (out_fd != STDOUT_FILENO)
+			close(out_fd);
 		i++;
 	}
+	if (in_fd != STDIN_FILENO)
+		close(in_fd);
+	i = 0;
+	while (i < cmd_count)
+	{
+		if (pids[i] > 0)
+		{
+			waitpid(pids[i], last_exit, 0);
+			*last_exit = WEXITSTATUS(*last_exit);
+		}
+		i++;
+	}
+	free(pids);
 	return (*last_exit);
 }
