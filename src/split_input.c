@@ -12,11 +12,30 @@
 
 #include "minishell.h"
 
-int	split_input_prepare(char *input, char ***tokenized)
+static int	handle_invalid(char **tokenized, int j)
 {
-	*tokenized = malloc((count_pipes(input) + 2) * sizeof(char *));
-	if (!*tokenized)
-		return (0);
+	while (j > 0)
+		free(tokenized[--j]);
+	return (0);
+}
+
+static int	handle_pipe(char *input, char **tokenized, int *indices)
+{
+	int		i;
+	int		j;
+	int		start;
+	char	*sub;
+
+	i = indices[0];
+	j = indices[1];
+	start = indices[2];
+	sub = ft_substr(input, start, i - start);
+	if (!sub)
+		return (handle_invalid(tokenized, j));
+	tokenized[j++] = sub;
+	indices[1] = j;
+	indices[2] = i + 1;
+	indices[0] = i + 1;
 	return (1);
 }
 
@@ -25,49 +44,47 @@ int	split_input_process(char *input, char **tokenized,
 {
 	int	i;
 	int	j;
-	int	start;
 
 	i = indices[0];
 	j = indices[1];
-	start = indices[2];
 	if (input[i] == '|' && !quotes[0] && !quotes[1])
-	{
-		tokenized[j++] = ft_substr(input, start, i - start);
-		if (!tokenized[j - 1])
-		{
-			while (j > 0)
-				free(tokenized[--j]);
-			return (0);
-		}
-		start = i + 1;
-	}
+		return (handle_pipe(input, tokenized, indices));
 	else if ((input[i] == ';' || input[i] == '\\') && !quotes[0] && !quotes[1])
+		return (handle_invalid(tokenized, j));
+	else
+	{
+		handle_quotes(input[i], quotes);
+		indices[0] = i + 1;
+		indices[1] = j;
+	}
+	return (1);
+}
+
+static int	add_last_token(char *input, char **tokenized, int *indices)
+{
+	int		j;
+	int		start;
+	char	*sub;
+
+	j = indices[1];
+	start = indices[2];
+	sub = ft_substr(input, start, indices[0] - start);
+	if (!sub)
 	{
 		while (j > 0)
 			free(tokenized[--j]);
 		return (0);
 	}
-	else
-	{
-		if (input[i] == '\'' && !quotes[1])
-			quotes[0] = !quotes[0];
-		if (input[i] == '\"' && !quotes[0])
-			quotes[1] = !quotes[1];
-	}
-	indices[0] = i + 1;
-	indices[1] = j;
-	indices[2] = start;
+	tokenized[j++] = sub;
+	tokenized[j] = NULL;
 	return (1);
 }
 
-// split by pipes, IF the pipe is not in quotes!!
 char	**split_input(char *input)
 {
 	char	**tokenized;
 	bool	quotes[2];
 	int		indices[3];
-	int		i;
-	int		j;
 
 	if (!split_input_prepare(input, &tokenized))
 		return (NULL);
@@ -76,27 +93,18 @@ char	**split_input(char *input)
 	indices[0] = 0;
 	indices[1] = 0;
 	indices[2] = 0;
-	i = 0;
-	j = 0;
-	while (input[i])
+	while (input[indices[0]])
 	{
-		indices[0] = i;
 		if (!split_input_process(input, tokenized, indices, quotes))
 		{
 			free(tokenized);
 			return (NULL);
 		}
-		i = indices[0];
-		j = indices[1];
 	}
-	tokenized[j++] = ft_substr(input, indices[2], i - indices[2]);
-	if (!tokenized[j - 1])
+	if (!add_last_token(input, tokenized, indices))
 	{
-		while (j > 0)
-			free(tokenized[--j]);
 		free(tokenized);
 		return (NULL);
 	}
-	tokenized[j] = NULL;
 	return (tokenized);
 }

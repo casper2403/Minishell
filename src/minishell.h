@@ -9,17 +9,6 @@
 /*   Updated: 2025/05/08 10:49:17 by cstevens         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
-/* ************************************************************************** */
-/*                                                                            */
-/*                                                        :::      ::::::::   */
-/*   minishell.h                                        :+:      :+:    :+:   */
-/*                                                    +:+ +:+         +:+     */
-/*   By: cstevens <cstevens@student.s19.be>         +#+  +:+       +#+        */
-/*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2025/05/08 10:49:15 by cstevens          #+#    #+#             */
-/*   Updated: 2025/05/08 10:49:17 by cstevens         ###   ########.fr       */
-/*                                                                            */
-/* ************************************************************************** */
 
 #ifndef MINISHELL_H
 # define MINISHELL_H
@@ -131,5 +120,12 @@ int				env_var_cmp(char *s1, char *s2);
 // split_arguments utils
 void			handle_space(char *cmd, int *i, t_split *s);
 void			handle_special_char(char *cmd, int *i, int *j, t_split *s);
+// splitinput helper
+void			handle_quotes(char c, bool *quotes);
+// signals
+void			ctrl_c_handler(void);
+void			ctrl_backslash_handler(void);
+void			signal_handler(int signalnumber);
+void			setup_signals(void);
 
 #endif

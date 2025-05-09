@@ -30,7 +30,9 @@ EXEC_SRCS	= src/args_counting.c \
 			  src/redirections.c \
 			  src/split_arguments.c \
 			  src/split_arguments_utils.c \
-			  src/split_input.c
+			  src/split_input.c \
+			  src/split_input_utils.c \
+			  src/signals.c
 EXEC_SRCS	+= src/builtin/builtin_cd.c src/builtin/builtin_echo.c src/builtin/builtin_env.c
 EXEC_SRCS	+= src/builtin/builtin_exit.c src/builtin/builtin_export_utils.c src/builtin/builtin_export.c src/builtin/builtin_pwd.c src/builtin/builtin_unset.c
 

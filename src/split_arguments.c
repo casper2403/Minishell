@@ -12,7 +12,7 @@
 
 #include "minishell.h"
 
-static int	handle_quotes(char *cmd, int *i, bool in_q[2], bool *single_q)
+static int	arg_handle_quotes(char *cmd, int *i, bool in_q[2], bool *single_q)
 {
 	if (cmd[*i] == '\'' && !in_q[1])
 	{
@@ -29,13 +29,6 @@ static int	handle_quotes(char *cmd, int *i, bool in_q[2], bool *single_q)
 		return (1);
 	}
 	return (0);
-}
-
-static void	add_arg(char **temp, char **argv, bool **quoted, int *j)
-{
-	argv[*j] = *temp;
-	(*quoted)[(*j)++] = true;
-	*temp = ft_strdup("");
 }
 
 static int	process_loop(char *cmd, t_split *s)
@@ -55,7 +48,7 @@ static int	process_loop(char *cmd, t_split *s)
 			handle_space(cmd, &i, s);
 			continue ;
 		}
-		if (handle_quotes(cmd, &i, s->in_q, &s->single_q))
+		if (arg_handle_quotes(cmd, &i, s->in_q, &s->single_q))
 			continue ;
 		if (i >= s->start)
 			append_char(&s->temp, cmd[i]);
