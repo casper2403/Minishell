@@ -28,15 +28,33 @@ struct s_token	*lexer(char *split_by_pipe)
 		free(token);
 		return (NULL);
 	}
+	token->argv[0] = NULL;
 	if (split_arguments(split_by_pipe, token->argv, &token->quoted))
 	{
 		write(1, "unclosed quotes\n", 16);
-		free(token->argv);
-		free(token->quoted);
+		free_char_array(token->argv);
+		if (token->quoted)
+			free(token->quoted);
 		free(token);
 		return (NULL);
 	}
-	cut_redirs(token->argv, token);
+	if (!cut_redirs(token->argv, token))
+	{
+		free_char_array(token->argv);
+		if (token->quoted)
+			free(token->quoted);
+		t_redir *current_redir = token->redirs;
+		t_redir *next_redir;
+		while (current_redir)
+		{
+			next_redir = current_redir->next;
+			free(current_redir->file);
+			free(current_redir);
+			current_redir = next_redir;
+		}
+		free(token);
+		return (NULL);
+	}
 	return (token);
 }
 
@@ -54,7 +72,10 @@ struct s_token	**tokenizer(char *input)
 		return (NULL);
 	tokens = malloc((count_pipes(input) + 2) * sizeof(struct s_token *));
 	if (!tokens)
-		return (free_char_array(divided_input), NULL);
+	{
+		free_char_array(divided_input);
+		return (NULL);
+	}
 	while (divided_input[i])
 	{
 		tokens[i] = lexer(divided_input[i]);
@@ -97,7 +118,7 @@ struct s_token	**parser(struct s_token **tokens)
 		if (tokens[i]->argv && tokens[i]->argv[0])
 			tokens[i]->built_in = is_builtin(tokens[i]->argv[0]);
 		redir = tokens[i]->redirs;
-		if (!validate_redir(redir, tokens, i))
+		if (!validate_redir(redir, tokens, i + 1))
 			return (NULL);
 	}
 	return (tokens);
@@ -111,15 +132,16 @@ int	process_input(char *input, int *last_exit, char ***env)
 	tokens = tokenizer(input);
 	if (!tokens)
 	{
-		*last_exit = 1;
+		*last_exit = 2;
 		return (1);
 	}
 	tokens = parser(tokens);
 	if (!tokens)
 	{
-		*last_exit = 1;
+		*last_exit = 2;
 		return (1);
 	}
 	executor(tokens, last_exit, env);
+	free_lexer(tokens, count_pipes(input) + 1);
 	return (0);
 }

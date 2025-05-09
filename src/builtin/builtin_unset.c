@@ -28,7 +28,7 @@ static int	is_valid_var_name(char *name)
 	return (1);
 }
 
-static int	find_env_var(char *var_name, char **env)
+static int	uns_find_env_var(char *var_name, char **env)
 {
 	int	i;
 	int	len;
@@ -52,7 +52,7 @@ static int	remove_env_var(char *var_name, char ***env)
 	int		j;
 	char	**new_env;
 
-	ix = find_env_var(var_name, *env);
+	ix = uns_find_env_var(var_name, *env);
 	if (ix < 0)
 		return (0);
 	i = 0;

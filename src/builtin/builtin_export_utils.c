@@ -12,6 +12,69 @@
 
 #include "../minishell.h"
 
+char	**allocate_sorted_env(char **env, int count)
+{
+	char	**sorted;
+	int		i;
+
+	sorted = malloc((count + 1) * sizeof(char *));
+	if (!sorted)
+		return (NULL);
+	i = 0;
+	while (i < count)
+	{
+		sorted[i] = ft_strdup(env[i]);
+		if (!sorted[i])
+		{
+			while (--i >= 0)
+				free(sorted[i]);
+			return (free(sorted), NULL);
+		}
+		i++;
+	}
+	sorted[count] = NULL;
+	return (sorted);
+}
+
+void	bubble_sort_env(char **sorted, int count)
+{
+	char	*temp;
+	int		i;
+	int		j;
+
+	i = 0;
+	while (i < count - 1)
+	{
+		j = 0;
+		while (j < count - i - 1)
+		{
+			if (env_var_cmp(sorted[j], sorted[j + 1]) > 0)
+			{
+				temp = sorted[j];
+				sorted[j] = sorted[j + 1];
+				sorted[j + 1] = temp;
+			}
+			j++;
+		}
+		i++;
+	}
+}
+
+char	**sort_env(char **env)
+{
+	char	**sorted;
+	int		count;
+
+	count = 0;
+	while (env[count])
+		count++;
+	sorted = allocate_sorted_env(env, count);
+	if (!sorted)
+		return (NULL);
+	bubble_sort_env(sorted, count);
+	return (sorted);
+}
+
 int	env_var_cmp(char *s1, char *s2)
 {
 	int	i;

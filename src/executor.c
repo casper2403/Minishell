@@ -9,16 +9,18 @@
 /*   Updated: 2025/05/08 10:48:18 by cstevens         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
-
 #include "minishell.h"
+#include <stdlib.h>
+#include <sys/wait.h>
+#include <unistd.h>
 
 int	execute_builtin(struct s_token *token, int *last_exit, char ***env)
 {
 	if (!token || !token->argv || !token->argv[0])
 		return (*last_exit = 1);
 	if (ft_strcmp(token->argv[0], "echo") == 0)
-		return (*last_exit = builtin_echo(token->argv,
-				token->quoted, *last_exit));
+		return (*last_exit = builtin_echo(token->argv, token->quoted,
+				*last_exit));
 	if (ft_strcmp(token->argv[0], "cd") == 0)
 		return (*last_exit = builtin_cd(token->argv, env));
 	if (ft_strcmp(token->argv[0], "pwd") == 0)
@@ -34,7 +36,6 @@ int	execute_builtin(struct s_token *token, int *last_exit, char ***env)
 	return (*last_exit = 0);
 }
 
-/* Search cmd in dirs array */
 static char	*search_in_dirs(char *cmd, char **dirs)
 {
 	int		i;
@@ -55,6 +56,40 @@ static char	*search_in_dirs(char *cmd, char **dirs)
 	return (NULL);
 }
 
+static void	command_not_found_exit(char *argv, int *last_exit)
+{
+	char	*la;
+
+	if (ft_strcmp(argv, "$?") == 0)
+	{
+		la = ft_itoa(*last_exit);
+		write(2, la, ft_strlen(la));
+		free(la);
+	}
+	else
+		write(2, argv, ft_strlen(argv));
+	write(2, ": command not found\n", 20);
+	exit(127);
+}
+
+static void	is_dir_exit(char *argv, char *path)
+{
+	write(2, argv, ft_strlen(argv));
+	write(2, ": Is a directory\n", 17);
+	if (path)
+		free(path);
+	exit(126);
+}
+
+static void	permission_denied_exit(char *argv, char *path)
+{
+	write(2, argv, ft_strlen(argv));
+	write(2, ": Permission denied\n", 20);
+	if (path)
+		free(path);
+	exit(126);
+}
+
 char	*find_executable(char *cmd, char **env)
 {
 	char	*path;
@@ -64,6 +99,11 @@ char	*find_executable(char *cmd, char **env)
 
 	if (!cmd || !*cmd)
 		return (NULL);
+	if (ft_strcmp(cmd, "$PWD") == 0)
+	{
+		path = getenv("PWD");
+		is_dir_exit(cmd, NULL);
+	}
 	if (cmd[0] == '/' || cmd[0] == '.' || cmd[0] == '~')
 		return (ft_strdup(cmd));
 	if (access(cmd, X_OK) == 0)
@@ -72,18 +112,15 @@ char	*find_executable(char *cmd, char **env)
 	if (!path)
 		return (NULL);
 	dirs = ft_split(path, ':');
+	if (!dirs)
+		return (NULL);
 	res = search_in_dirs(cmd, dirs);
 	i = 0;
 	while (dirs[i])
-	{
-		free(dirs[i]);
-		i++;
-	}
-	free(dirs);
-	return (res);
+		free(dirs[i++]);
+	return (free(dirs), res);
 }
 
-/* Heredoc: read until delimiter */
 static int	handle_heredoc(t_redir *r, int last_exit)
 {
 	int		pipe_fd[2];
@@ -91,33 +128,37 @@ static int	handle_heredoc(t_redir *r, int last_exit)
 	char	*exp;
 	int		fd;
 
-	pipe(pipe_fd);
+	if (pipe(pipe_fd) < 0)
+		return (perror("pipe"), 1);
 	while (1)
 	{
 		line = readline("> ");
 		if (!line || ft_strcmp(line, r->file) == 0)
-		{
-			free(line);
 			break ;
-		}
 		if (!r->quoted)
 		{
 			exp = expand_variables(line, last_exit);
-			write(pipe_fd[1], exp, ft_strlen(exp));
+			ft_putendl_fd(exp, pipe_fd[1]);
 			free(exp);
 		}
 		else
-			write(pipe_fd[1], line, ft_strlen(line));
-		write(pipe_fd[1], "\n", 1);
+			ft_putendl_fd(line, pipe_fd[1]);
 		free(line);
 	}
+	free(line);
 	close(pipe_fd[1]);
-	fd = dup(pipe_fd[0]);
-	close(pipe_fd[0]);
-	return (fd);
+	return (close(pipe_fd[1]), fd = dup(pipe_fd[0]), close(pipe_fd[0]), fd);
 }
 
-/* Setup redirections */
+static void	fd_error(t_redir *r)
+{
+	ft_putstr_fd(ft_strjoin("minishell: ", r->file), 2);
+	if (errno == EACCES)
+		ft_putstr_fd(": Permission denied\n", 2);
+	else
+		ft_putstr_fd(": No such file or directory\n", 2);
+}
+
 static int	setup_redirections(t_redir *r, int *last_exit)
 {
 	int	fd;
@@ -133,16 +174,7 @@ static int	setup_redirections(t_redir *r, int *last_exit)
 		else
 			fd = open(r->file, O_WRONLY | O_CREAT | O_APPEND, 0644);
 		if (fd < 0)
-		{
-			ft_putstr_fd("minishell: ", 2);
-			ft_putstr_fd(r->file, 2);
-			if (errno == EACCES)
-				ft_putstr_fd(": Permission denied\n", 2);
-			else
-				ft_putstr_fd(": No such file or directory\n", 2);
-			*last_exit = 1;
-			return (1);
-		}
+			return (fd_error(r), *last_exit = 1, 1);
 		if (r->type == REDIR_IN || r->type == REDIR_HEREDOC)
 			dup2(fd, STDIN_FILENO);
 		else
@@ -153,37 +185,22 @@ static int	setup_redirections(t_redir *r, int *last_exit)
 	return (0);
 }
 
-/* Child execution */
-static void	exec_child(struct s_token *token, int *last_exit, char **env)
+static void	exec_child(struct s_token *token, int *last_exit, char ***env)
 {
 	char	*path;
 
 	if (token->built_in)
-		exit(execute_builtin(token, last_exit, &env));
+		exit(execute_builtin(token, last_exit, env));
 	if (!token->argv[0] || !token->argv[0][0])
 		exit(0);
-	path = find_executable(token->argv[0], env);
+	path = find_executable(token->argv[0], *env);
 	if (!path)
-	{
-		write(2, token->argv[0], ft_strlen(token->argv[0]));
-		write(2, ": command not found\n", 20);
-		exit(127);
-	}
-	execve(path, token->argv, env);
+		command_not_found_exit(token->argv[0], last_exit);
+	execve(path, token->argv, *env);
 	if (errno == EISDIR)
-	{
-		write(2, token->argv[0], ft_strlen(token->argv[0]));
-		write(2, ": Is a directory\n", 17);
-		free(path);
-		exit(126);
-	}
+		is_dir_exit(token->argv[0], path);
 	if (errno == EACCES)
-	{
-		write(2, token->argv[0], ft_strlen(token->argv[0]));
-		write(2, ": Permission denied\n", 20);
-		free(path);
-		exit(126);
-	}
+		permission_denied_exit(token->argv[0], path);
 	write(2, token->argv[0], ft_strlen(token->argv[0]));
 	write(2, ": ", 2);
 	perror("");
@@ -191,99 +208,122 @@ static void	exec_child(struct s_token *token, int *last_exit, char **env)
 	exit(126);
 }
 
-/* Fork and execute process */
-static int	fork_and_execute(t_redir *r, struct s_token *token, int *last_exit,
-							int in_fd, int out_fd, char **env, pid_t *pid)
+static int	fork_and_execute(struct s_token *token, int *last_exit,
+		struct s_piper *piper, char ***env)
 {
-	*pid = fork();
-	if (*pid == 0)
+	piper->pids[piper->i] = fork();
+	if (piper->pids[piper->i] == 0)
 	{
-		if (in_fd != STDIN_FILENO)
+		if (piper->in_fd != STDIN_FILENO)
 		{
-			dup2(in_fd, STDIN_FILENO);
-			close(in_fd);
+			dup2(piper->in_fd, STDIN_FILENO);
+			close(piper->in_fd);
 		}
-		if (out_fd != STDOUT_FILENO)
+		if (piper->out_fd != STDOUT_FILENO)
 		{
-			dup2(out_fd, STDOUT_FILENO);
-			close(out_fd);
+			dup2(piper->out_fd, STDOUT_FILENO);
+			close(piper->out_fd);
 		}
-		if (r && setup_redirections(r, last_exit))
+		if (token->redirs && setup_redirections(token->redirs, last_exit))
 			exit(*last_exit);
 		exec_child(token, last_exit, env);
 	}
-	if (in_fd != STDIN_FILENO)
-		close(in_fd);
-	if (out_fd != STDOUT_FILENO)
-		close(out_fd);
+	if (piper->in_fd != STDIN_FILENO)
+		close(piper->in_fd);
+	if (piper->out_fd != STDOUT_FILENO)
+		close(piper->out_fd);
+	return (0);
+}
+
+static int	prepare_fds(struct s_piper *piper, struct s_token **tokens)
+{
+	piper->pipe_fd[0] = -1;
+	if (tokens[piper->i + 1])
+	{
+		if (pipe(piper->pipe_fd) != 0)
+			return (1);
+		piper->out_fd = piper->pipe_fd[1];
+	}
+	else
+		piper->out_fd = STDOUT_FILENO;
+	return (0);
+}
+
+static int	execute_cmd(struct s_token *tok, int *last_exit,
+		struct s_piper *piper, char ***env)
+{
+	if (tok->built_in && piper->in_fd == STDIN_FILENO
+		&& piper->out_fd == STDOUT_FILENO && !tok->redirs)
+	{
+		execute_builtin(tok, last_exit, env);
+		piper->pids[piper->i] = 0;
+	}
+	else
+	{
+		if (fork_and_execute(tok, last_exit, piper, env) < 0)
+			return (1);
+	}
+	return (0);
+}
+
+static void	update_fds(struct s_piper *piper, struct s_token **tokens)
+{
+	if (piper->in_fd != STDIN_FILENO)
+		close(piper->in_fd);
+	if (tokens[piper->i + 1])
+		piper->in_fd = piper->pipe_fd[0];
+	else
+		piper->in_fd = STDIN_FILENO;
+	if (piper->out_fd != STDOUT_FILENO)
+		close(piper->out_fd);
+}
+
+int	execute_loop(struct s_piper *piper, struct s_token **tokens, int *last_exit,
+		char ***env)
+{
+	piper->i = -1;
+	while (++piper->i < piper->cmd_count)
+	{
+		if (prepare_fds(piper, tokens))
+		{
+			*last_exit = 1;
+			return (1);
+		}
+		if (execute_cmd(tokens[piper->i], last_exit, piper, env))
+		{
+			*last_exit = 1;
+			return (1);
+		}
+		update_fds(piper, tokens);
+	}
 	return (0);
 }
 
 int	executor(struct s_token **tokens, int *last_exit, char ***env)
 {
-	int		in_fd;
-	int		pipe_fd[2];
-	int		out_fd;
-	pid_t	*pids;
-	int		cmd_count;
-	int		i;
+	t_piper	piper;
+	int		status;
 
-	out_fd = STDOUT_FILENO;
-	in_fd = STDIN_FILENO;
-	cmd_count = 0;
-	while (tokens[cmd_count])
-		cmd_count++;
-	pids = malloc(cmd_count * sizeof(pid_t));
-	if (!pids)
-		return (*last_exit = 1);
-	i = 0;
-	while (i < cmd_count)
+	piper.out_fd = STDOUT_FILENO;
+	piper.in_fd = STDIN_FILENO;
+	piper.cmd_count = 0;
+	while (tokens[piper.cmd_count])
+		piper.cmd_count++;
+	piper.pids = malloc(piper.cmd_count * sizeof(pid_t));
+	if (!piper.pids)
+		return (*last_exit = 1, 1);
+	if (execute_loop(&piper, tokens, last_exit, env))
+		return (free(piper.pids), *last_exit);
+	if (piper.in_fd != STDIN_FILENO)
+		close(piper.in_fd);
+	piper.i = -1;
+	while (++piper.i < piper.cmd_count)
 	{
-		pipe_fd[0] = -1;
-		if (tokens[i + 1])
+		if (piper.pids[piper.i] > 0)
 		{
-			if (pipe(pipe_fd) != 0)
-			{
-				free(pids);
-				return (*last_exit = 1);
-			}
-			out_fd = pipe_fd[1];
+			waitpid(piper.pids[piper.i], &status, 0);
+			*last_exit = WEXITSTATUS(status);
 		}
-		else
-			out_fd = STDOUT_FILENO;
-		if (tokens[i]->built_in && in_fd == STDIN_FILENO
-			&& out_fd == STDOUT_FILENO && !tokens[i]->redirs)
-		{
-			execute_builtin(tokens[i], last_exit, env);
-			pids[i] = 0;
-		}
-		else
-		{
-			fork_and_execute(tokens[i]->redirs, tokens[i], last_exit,
-				in_fd, out_fd, *env, &pids[i]);
-		}
-		if (in_fd != STDIN_FILENO)
-			close(in_fd);
-		if (tokens[i + 1])
-			in_fd = pipe_fd[0];
-		else
-			in_fd = STDIN_FILENO;
-		if (out_fd != STDOUT_FILENO)
-			close(out_fd);
-		i++;
 	}
-	if (in_fd != STDIN_FILENO)
-		close(in_fd);
-	i = 0;
-	while (i < cmd_count)
-	{
-		if (pids[i] > 0)
-		{
-			waitpid(pids[i], last_exit, 0);
-			*last_exit = WEXITSTATUS(*last_exit);
-		}
-		i++;
-	}
-	free(pids);
-	return (*last_exit);
+	return (free(piper.pids), *last_exit);
 }

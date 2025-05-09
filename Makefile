@@ -13,8 +13,8 @@
 NAME_EXEC	= minishell
 LIBFT		= lib/libft/libft.a
 CC			= cc
-CFLAGS		= -Wall -Wextra -g -Isrc -Ilib/libft
-OFLAGS		= -Wall -Wextra -g -Isrc -Ilib/libft
+CFLAGS		= -Wall -Wextra -g -o -Isrc -Ilib/libft
+OFLAGS		= -Wall -Wextra -g -o -Isrc -Ilib/libft
 LDFLAGS		= -lreadline
 OBJ			= obj
 
@@ -33,8 +33,8 @@ EXEC_SRCS	= src/args_counting.c \
 			  src/split_input.c \
 			  src/split_input_utils.c \
 			  src/signals.c
-EXEC_SRCS	+= src/builtin/builtin_cd.c src/builtin/builtin_echo.c src/builtin/builtin_env.c
-EXEC_SRCS	+= src/builtin/builtin_exit.c src/builtin/builtin_export_utils.c src/builtin/builtin_export.c src/builtin/builtin_pwd.c src/builtin/builtin_unset.c
+EXEC_SRCS	+= src/builtin/builtin_cd.c src/builtin/builtin_cd_utils.c src/builtin/builtin_echo.c src/builtin/builtin_env.c
+EXEC_SRCS	+= src/builtin/builtin_exit.c src/builtin/builtin_export_utils.c src/builtin/builtin_export.c src/builtin/builtin_pwd.c src/builtin/builtin_unset.c src/builtin/builtin_export_utils2.c
 
 # Object files in the obj folder (handle subdirectories)
 EXEC_OBJS	= $(EXEC_SRCS:src/%.c=obj/%.o)

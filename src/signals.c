@@ -24,9 +24,9 @@ void	ctrl_c_handler(void)
 
 void	ctrl_backslash_handler(void)
 {
-	rl_replace_line("", 0);
-	rl_on_new_line();
-	rl_redisplay();
+	// rl_replace_line("", 0);
+	// rl_on_new_line();
+	// rl_redisplay();
 }
 
 void	signal_handler(int signalnumber)
