@@ -12,14 +12,14 @@
 
 #include "../minishell.h"
 
-char	*get_target_path(char **argv)
+char	*get_target_path(char **argv, char **env)
 {
 	char	*home;
 	char	*oldpwd;
 
 	if (!argv[1] || ft_strcmp(argv[1], "~") == 0)
 	{
-		home = getenv("HOME");
+		home = env_get("HOME", env);
 		if (!home)
 		{
 			ft_putstr_fd("minishell: cd: HOME not set\n", 2);
@@ -29,7 +29,7 @@ char	*get_target_path(char **argv)
 	}
 	else if (ft_strcmp(argv[1], "-") == 0)
 	{
-		oldpwd = getenv("OLDPWD");
+		oldpwd = env_get("OLDPWD", env);
 		if (!oldpwd)
 		{
 			ft_putstr_fd("minishell: cd: OLDPWD not set\n", 2);
@@ -38,7 +38,7 @@ char	*get_target_path(char **argv)
 		ft_putendl_fd(oldpwd, 1);
 		return (ft_strdup(oldpwd));
 	}
-	return (expand_variables(argv[1], 0));
+	return (expand_variables(argv[1], 0, env));
 }
 
 void	update_env_var(char ***env, char *var, char *value)

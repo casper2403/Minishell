@@ -58,7 +58,7 @@ int	builtin_cd(char **argv, char ***env)
 
 	if (validate_args(argv))
 		return (1);
-	path = get_target_path(argv);
+	path = get_target_path(argv, *env);
 	if (!path || path[0] == '\0')
 		return (free(path), 1);
 	if (get_current_dir(oldpwd, sizeof(oldpwd)))

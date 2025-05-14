@@ -12,7 +12,7 @@
 
 #include "../minishell.h"
 
-int	builtin_echo(char **argv, bool *quoted, int last_exit)
+int	builtin_echo(char **argv, bool *quoted, int last_exit, char **env)
 {
 	int		i;
 	int		n_check;
@@ -28,7 +28,7 @@ int	builtin_echo(char **argv, bool *quoted, int last_exit)
 			ft_putstr_fd(argv[i], 1);
 		else
 		{
-			expanded = expand_variables(argv[i], last_exit);
+			expanded = expand_variables(argv[i], last_exit, env);
 			ft_putstr_fd(expanded, 1);
 			free(expanded);
 		}

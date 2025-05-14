@@ -24,3 +24,85 @@ int	is_builtin(const char *cmd)
 			return (1);
 	return (0);
 }
+
+int	validate_redir(t_redir *redir, struct s_token **tokens, int i)
+{
+	while (redir)
+	{
+		if (!redir->file || redir->file[0] == '\0')
+			return (free_lexer(tokens, i), 0);
+		if (redir->type == REDIR_HEREDOC)
+		{
+			if (ft_strchr(redir->file, ' ') || ft_strchr(redir->file, '\t'))
+				return (free_lexer(tokens, i), 0);
+			redir->quoted = (redir->file[0] == '\'' || redir->file[0] == '"');
+		}
+		redir = redir->next;
+	}
+	return (1);
+}
+
+void	print_redir_error(char *token)
+{
+	char	error[100];
+
+	if (!ft_strcmp(token, ">"))
+		write(2, " syntax error near unexpected token `>'\n", 39);
+	else if (!ft_strcmp(token, "<"))
+		write(2, " syntax error near unexpected token `<'\n", 39);
+	else
+	{
+		sprintf(error, " syntax error near unexpected token `%s'\n", token);
+		write(2, error, ft_strlen(error));
+	}
+}
+
+int	check_redir_count(char *input, int *i)
+{
+	int	redir_start;
+
+	redir_start = *i;
+	if (input[*i] == '>')
+	{
+		while (input[*i] == '>')
+			(*i)++;
+		if (*i - redir_start > 2)
+		{
+			print_redir_error(">");
+			return (2);
+		}
+	}
+	else if (input[*i] == '<')
+	{
+		while (input[*i] == '<')
+			(*i)++;
+		if (*i - redir_start > 2)
+		{
+			print_redir_error("<");
+			return (2);
+		}
+	}
+	return (0);
+}
+
+int	check_after_redir(char *input, int *i)
+{
+	char	*token;
+
+	while (input[*i] && input[*i] == ' ')
+		(*i)++;
+	if (!input[*i] || input[*i] == '>' || input[*i] == '<' || input[*i] == '|')
+	{
+		if (!input[*i])
+			token = "newline";
+		else if (input[*i] == '>')
+			token = ">";
+		else if (input[*i] == '<')
+			token = "<";
+		else
+			token = "|";
+		print_redir_error(token);
+		return (2);
+	}
+	return (0);
+}

@@ -12,17 +12,6 @@
 
 #include "minishell.h"
 
-/* Extract variable name from string */
-char	*get_var_name(char *str)
-{
-	int	i;
-
-	i = 0;
-	while (str[i] && (ft_isalnum(str[i]) || str[i] == '_'))
-		i++;
-	return (ft_substr(str, 0, i));
-}
-
 /* Append src to *dest, free old */
 void	append_str(char **dest, const char *src)
 {
@@ -43,8 +32,24 @@ void	append_char(char **dest, char c)
 	append_str(dest, tmp);
 }
 
-/* Extract $VAR or $? value, set len */
-char	*extract_value(const char *s, int *len, int last_exit)
+char	*env_get(const char *name, char **env)
+{
+	size_t	nlen;
+	int		i;
+
+	nlen = strlen(name);
+	i = 0;
+	while (env[i])
+	{
+		if (ft_strncmp(env[i], name, nlen) == 0
+			&& env[i][nlen] == '=')
+			return (env[i] + nlen + 1);
+		i++;
+	}
+	return (NULL);
+}
+
+char	*extract_value(const char *s, int *len, int last_exit, char **env)
 {
 	char	*var;
 	char	*val;
@@ -55,7 +60,7 @@ char	*extract_value(const char *s, int *len, int last_exit)
 		return (ft_itoa(last_exit));
 	}
 	var = get_var_name((char *)s + 1);
-	val = getenv(var);
+	val = env_get(var, env);
 	*len = ft_strlen(var) + 1;
 	free(var);
 	if (val)
@@ -64,7 +69,7 @@ char	*extract_value(const char *s, int *len, int last_exit)
 		return (ft_strdup(""));
 }
 
-char	*expand_variables(char *str, int last_exit)
+char	*expand_variables(char *str, int last_exit, char **env)
 {
 	char	*res;
 	int		i;
@@ -78,7 +83,7 @@ char	*expand_variables(char *str, int last_exit)
 		if (str[i] == '$' && str[i + 1] && (ft_isalnum(str[i + 1])
 				|| str[i + 1] == '?' || str[i + 1] == '_'))
 		{
-			v = extract_value(str + i, &len, last_exit);
+			v = extract_value(str + i, &len, last_exit, env);
 			append_str(&res, v);
 			free(v);
 			i += len;

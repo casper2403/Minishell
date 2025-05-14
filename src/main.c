@@ -12,34 +12,7 @@
 
 #include "minishell.h"
 
-static char	**copy_env(char **env)
-{
-	int		count;
-	char	**new_env;
-	int		i;
-
-	count = 0;
-	while (env[count])
-		count++;
-	new_env = malloc((count + 1) * sizeof(char *));
-	if (!new_env)
-		return (NULL);
-	i = 0;
-	while (i < count)
-	{
-		new_env[i] = ft_strdup(env[i]);
-		if (!new_env[i])
-		{
-			while (--i >= 0)
-				free(new_env[i]);
-			free(new_env);
-			return (NULL);
-		}
-		i++;
-	}
-	new_env[count] = NULL;
-	return (new_env);
-}
+int	g_is_child_running = 0; // Add this global variable
 
 static void	free_env(char **env)
 {
@@ -69,6 +42,33 @@ static void	handle_input(char *input, int *last_exit, char ***local_env)
 	free(input);
 }
 
+static void	increment_shlvl(char ***local_env)
+{
+	char	*shlvl_str;
+	int		shlvl;
+	char	*new_shlvl;
+	char	*export_arg[3];
+	char	*new_value;
+
+	shlvl_str = env_get("SHLVL", *local_env);
+	if (!shlvl_str || !*shlvl_str)
+		shlvl = 1;
+	else
+		shlvl = ft_atoi(shlvl_str) + 1;
+	new_shlvl = ft_itoa(shlvl);
+	if (!new_shlvl)
+		return ;
+	new_value = ft_strjoin("SHLVL=", new_shlvl);
+	free(new_shlvl);
+	if (!new_value)
+		return ;
+	export_arg[0] = "export";
+	export_arg[1] = new_value;
+	export_arg[2] = NULL;
+	builtin_export(export_arg, local_env);
+	free(new_value);
+}
+
 static int	initialize_shell(char **env, char ***local_env)
 {
 	*local_env = copy_env(env);
@@ -77,6 +77,7 @@ static int	initialize_shell(char **env, char ***local_env)
 		write(2, "Failed to initialize environment\n", 31);
 		return (1);
 	}
+	increment_shlvl(local_env);
 	setup_signals();
 	return (0);
 }

@@ -28,33 +28,15 @@ struct s_token	*lexer(char *split_by_pipe)
 		free(token);
 		return (NULL);
 	}
-	token->argv[0] = NULL;
 	if (split_arguments(split_by_pipe, token->argv, &token->quoted))
 	{
 		write(1, "unclosed quotes\n", 16);
-		free_char_array(token->argv);
-		if (token->quoted)
-			free(token->quoted);
+		free(token->argv);
+		free(token->quoted);
 		free(token);
 		return (NULL);
 	}
-	if (!cut_redirs(token->argv, token))
-	{
-		free_char_array(token->argv);
-		if (token->quoted)
-			free(token->quoted);
-		t_redir *current_redir = token->redirs;
-		t_redir *next_redir;
-		while (current_redir)
-		{
-			next_redir = current_redir->next;
-			free(current_redir->file);
-			free(current_redir);
-			current_redir = next_redir;
-		}
-		free(token);
-		return (NULL);
-	}
+	cut_redirs(token->argv, token);
 	return (token);
 }
 
@@ -88,23 +70,6 @@ struct s_token	**tokenizer(char *input)
 	return (tokens);
 }
 
-static int	validate_redir(t_redir *redir, struct s_token **tokens, int i)
-{
-	while (redir)
-	{
-		if (!redir->file || redir->file[0] == '\0')
-			return (free_lexer(tokens, i), 0);
-		if (redir->type == REDIR_HEREDOC)
-		{
-			if (ft_strchr(redir->file, ' ') || ft_strchr(redir->file, '\t'))
-				return (free_lexer(tokens, i), 0);
-			redir->quoted = (redir->file[0] == '\'' || redir->file[0] == '"');
-		}
-		redir = redir->next;
-	}
-	return (1);
-}
-
 struct s_token	**parser(struct s_token **tokens)
 {
 	int			i;
@@ -118,30 +83,56 @@ struct s_token	**parser(struct s_token **tokens)
 		if (tokens[i]->argv && tokens[i]->argv[0])
 			tokens[i]->built_in = is_builtin(tokens[i]->argv[0]);
 		redir = tokens[i]->redirs;
-		if (!validate_redir(redir, tokens, i + 1))
+		if (!validate_redir(redir, tokens, i))
 			return (NULL);
 	}
 	return (tokens);
 }
 
-// TODO: Add cleanup for tokens after execution
+static int	check_redir_syntax(char *input)
+{
+	int		i;
+	int		status;
+	bool	in_quotes[2];
+
+	i = 0;
+	in_quotes[0] = false;
+	in_quotes[1] = false;
+	while (input[i] && input[i] == ' ')
+		i++;
+	while (input[i])
+	{
+		prs_handle_quotes(input[i], in_quotes);
+		status = prs_process_redirection(input, &i, in_quotes);
+		if (status > 0)
+			continue ;
+		else if (status < 0)
+			return (status);
+		i++;
+	}
+	return (0);
+}
+
 int	process_input(char *input, int *last_exit, char ***env)
 {
 	struct s_token	**tokens;
+	int				syntax_check;
 
+	if (!input || !*input)
+		return (0);
+	syntax_check = check_pipe_syntax(input);
+	if (syntax_check != 0)
+		return (*last_exit = syntax_check);
+	syntax_check = check_redir_syntax(input);
+	if (syntax_check != 0)
+		return (*last_exit = syntax_check);
 	tokens = tokenizer(input);
 	if (!tokens)
-	{
-		*last_exit = 2;
-		return (1);
-	}
+		return (*last_exit = 1);
 	tokens = parser(tokens);
 	if (!tokens)
-	{
-		*last_exit = 2;
-		return (1);
-	}
-	executor(tokens, last_exit, env);
+		return (*last_exit = 1);
+	*last_exit = executor(tokens, last_exit, env);
 	free_lexer(tokens, count_pipes(input) + 1);
-	return (0);
+	return (*last_exit);
 }
