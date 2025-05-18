@@ -57,6 +57,6 @@ int	handle_pipe(char *input, char **tokenized, int *indices)
 
 int	pipe_syntax_error(void)
 {
-	write(2, " syntax error near unexpected token `|'\n", 39);
+	write(2, "minishell: syntax error near unexpected token `|'\n", 50);
 	return (2);
 }

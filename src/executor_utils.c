@@ -37,7 +37,7 @@ char	*env_get(const char *name, char **env)
 	size_t	nlen;
 	int		i;
 
-	nlen = strlen(name);
+	nlen = ft_strlen(name);
 	i = 0;
 	while (env[i])
 	{

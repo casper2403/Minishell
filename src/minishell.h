@@ -73,6 +73,7 @@ typedef struct s_piper
 
 //main functions
 char				**copy_env(char **env);
+void	initialize_default_env(char ***local_env);
 // parser functions
 int					process_input(char *input, int *last_exit, char ***env);
 struct s_token		**parser(struct s_token **tokens);
@@ -167,6 +168,7 @@ int					fork_and_execute(struct s_token *token, int *last_exit,
 int					prepare_fds(struct s_piper *piper, struct s_token **tokens);
 int					execute_cmd(struct s_token *tok, int *last_exit,
 						struct s_piper *piper, char ***env);
+void				setup_child_io(struct s_piper *piper);
 // export utils
 int					exp_is_valid_var_name(char *name);
 int					env_var_cmp(char *s1, char *s2);
@@ -199,5 +201,8 @@ void				setup_signals(void);
 // cd utils
 void				update_env_var(char ***env, char *var, char *value);
 char				*get_target_path(char **argv, char **env);
+
+void				update_last_command(char ***env, const char *last_command);
+
 
 #endif

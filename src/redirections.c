@@ -14,19 +14,17 @@
 
 t_redir_type	get_redir_type(char **cmd, int index)
 {
-	if (cmd[index][0] == '<')
-	{
-		if (cmd[index + 1] && cmd[index + 1][0] == '<')
-			return (REDIR_HEREDOC);
+	if (cmd[index][0] == '\'' || cmd[index][0] == '\"')
+		return (-1);
+	if (ft_strcmp(cmd[index], "<<") == 0)
+		return (REDIR_HEREDOC);
+	if (ft_strcmp(cmd[index], "<") == 0)
 		return (REDIR_IN);
-	}
-	if (cmd[index][0] == '>')
-	{
-		if (cmd[index + 1] && cmd[index + 1][0] == '>')
-			return (REDIR_APPEND);
+	if (ft_strcmp(cmd[index], ">>") == 0)
+		return (REDIR_APPEND);
+	if (ft_strcmp(cmd[index], ">") == 0)
 		return (REDIR_OUT);
-	}
-	return (REDIR_OUT);
+	return (-1);
 }
 
 // TODO detect quote on target if needed
@@ -38,7 +36,7 @@ t_redir	*create_redir(t_redir_type type, char *target)
 	if (!redir)
 		return (NULL);
 	redir->type = type;
-	redir->file = strdup(target);
+	redir->file = ft_strdup(target);
 	if (!redir->file)
 	{
 		free(redir);

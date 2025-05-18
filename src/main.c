@@ -71,7 +71,10 @@ static void	increment_shlvl(char ***local_env)
 
 static int	initialize_shell(char **env, char ***local_env)
 {
-	*local_env = copy_env(env);
+	if (!env || !*env)
+		initialize_default_env(local_env);
+	else
+		*local_env = copy_env(env);
 	if (!*local_env)
 	{
 		write(2, "Failed to initialize environment\n", 31);

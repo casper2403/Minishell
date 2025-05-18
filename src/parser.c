@@ -107,7 +107,7 @@ static int	check_redir_syntax(char *input)
 		if (status > 0)
 			continue ;
 		else if (status < 0)
-			return (status);
+			return (status * -1);
 		i++;
 	}
 	return (0);

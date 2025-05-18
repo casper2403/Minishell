@@ -40,8 +40,8 @@ void	setup_signals(void)
 	struct sigaction	sa_int;
 	struct sigaction	sa_quit;
 
-	memset(&sa_int, 0, sizeof(struct sigaction));
-	memset(&sa_quit, 0, sizeof(struct sigaction));
+	ft_memset(&sa_int, 0, sizeof(struct sigaction));
+	ft_memset(&sa_quit, 0, sizeof(struct sigaction));
 	sa_int.sa_handler = signal_handler;
 	sigemptyset(&sa_int.sa_mask);
 	sa_int.sa_flags = SA_RESTART;

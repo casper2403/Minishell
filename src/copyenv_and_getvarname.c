@@ -50,3 +50,21 @@ char	**copy_env(char **env)
 	new_env[count] = NULL;
 	return (new_env);
 }
+
+void	setup_child_io(struct s_piper *piper)
+{
+	if (piper->in_fd != STDIN_FILENO)
+	{
+		dup2(piper->in_fd, STDIN_FILENO);
+		close(piper->in_fd);
+	}
+	if (piper->out_fd != STDOUT_FILENO)
+	{
+		dup2(piper->out_fd, STDOUT_FILENO);
+		close(piper->out_fd);
+	}
+	if (piper->pipe_fd[0] != -1 && piper->pipe_fd[0] != piper->in_fd)
+		close(piper->pipe_fd[0]);
+	if (piper->pipe_fd[1] != -1 && piper->pipe_fd[1] != piper->out_fd)
+		close(piper->pipe_fd[1]);
+}

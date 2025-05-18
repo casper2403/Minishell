@@ -38,29 +38,20 @@ void	exec_child(struct s_token *token, int *last_exit, char ***env)
 }
 
 int	fork_and_execute(struct s_token *token, int *last_exit,
-							struct s_piper *piper, char ***env)
+					struct s_piper *piper, char ***env)
 {
 	g_is_child_running = 1;
 	piper->pids[piper->i] = fork();
+	if (piper->pids[piper->i] == -1)
+		return (-1);
 	if (piper->pids[piper->i] == 0)
 	{
-		if (piper->in_fd != STDIN_FILENO)
-		{
-			dup2(piper->in_fd, STDIN_FILENO);
-			close(piper->in_fd);
-		}
-		if (piper->out_fd != STDOUT_FILENO)
-		{
-			dup2(piper->out_fd, STDOUT_FILENO);
-			close(piper->out_fd);
-		}
+		setup_child_io(piper);
 		if (token->redirs && setup_redirections(token->redirs, last_exit, *env))
 			exit(*last_exit);
 		exec_child(token, last_exit, env);
 	}
-	if (piper->in_fd != STDIN_FILENO)
-		close(piper->in_fd);
-	if (piper->out_fd != STDOUT_FILENO)
+	else if (piper->out_fd != STDOUT_FILENO)
 		close(piper->out_fd);
 	return (0);
 }
@@ -80,7 +71,7 @@ int	prepare_fds(struct s_piper *piper, struct s_token **tokens)
 }
 
 int	execute_cmd(struct s_token *tok, int *last_exit,
-	struct s_piper *piper, char ***env)
+			struct s_piper *piper, char ***env)
 {
 	if (tok->argv)
 		expand_args(tok->argv, tok->quoted, *last_exit, *env);

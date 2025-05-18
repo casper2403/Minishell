@@ -17,24 +17,24 @@ char	*get_target_path(char **argv, char **env)
 	char	*home;
 	char	*oldpwd;
 
-	if (!argv[1] || ft_strcmp(argv[1], "~") == 0)
+	if (!argv[1] || argv[1][0] == '~')
 	{
 		home = env_get("HOME", env);
 		if (!home)
-		{
 			ft_putstr_fd("minishell: cd: HOME not set\n", 2);
+		if (!home)
 			return (NULL);
-		}
-		return (ft_strdup(home));
+		if (!argv[1] || ft_strcmp(argv[1], "~") == 0)
+			return (ft_strdup(home));
+		return (ft_strjoin(home, &(argv[1][1])));
 	}
 	else if (ft_strcmp(argv[1], "-") == 0)
 	{
 		oldpwd = env_get("OLDPWD", env);
 		if (!oldpwd)
-		{
 			ft_putstr_fd("minishell: cd: OLDPWD not set\n", 2);
+		if (!oldpwd)
 			return (NULL);
-		}
 		ft_putendl_fd(oldpwd, 1);
 		return (ft_strdup(oldpwd));
 	}

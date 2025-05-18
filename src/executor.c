@@ -57,14 +57,18 @@ static void	initialize_piper(t_piper *piper, struct s_token **tokens)
 static void	wait_for_children(t_piper *piper, int *last_exit)
 {
 	int	status;
+	int	i;
 
-	piper->i = -1;
-	while (++piper->i < piper->cmd_count)
+	i = -1;
+	while (++i < piper->cmd_count)
 	{
-		if (piper->pids[piper->i] > 0)
+		if (piper->pids[i] > 0)
 		{
-			waitpid(piper->pids[piper->i], &status, 0);
-			*last_exit = WEXITSTATUS(status);
+			waitpid(piper->pids[i], &status, 0);
+			if (WIFEXITED(status))
+				*last_exit = WEXITSTATUS(status);
+			else if (WIFSIGNALED(status))
+				*last_exit = 128 + WTERMSIG(status);
 		}
 	}
 	g_is_child_running = 0;
