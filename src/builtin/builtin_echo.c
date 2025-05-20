@@ -12,11 +12,20 @@
 
 #include "../minishell.h"
 
+static void	expanded_echo(char **argv, int last_exit, char **env, int i)
+{
+	char	*expanded;
+
+	expanded = expand_variables(argv[i], last_exit, env);
+	ft_putstr_fd(expanded, 1);
+	update_last_command(&env, expanded);
+	free(expanded);
+}
+
 int	builtin_echo(char **argv, bool *quoted, int last_exit, char **env)
 {
-	int		i;
-	int		n_check;
-	char	*expanded;
+	int	i;
+	int	n_check;
 
 	i = 0;
 	n_check = 0;
@@ -27,11 +36,7 @@ int	builtin_echo(char **argv, bool *quoted, int last_exit, char **env)
 		if (quoted && quoted[i])
 			ft_putstr_fd(argv[i], 1);
 		else
-		{
-			expanded = expand_variables(argv[i], last_exit, env);
-			ft_putstr_fd(expanded, 1);
-			free(expanded);
-		}
+			expanded_echo(argv, last_exit, env, i);
 		if (argv[i + 1] && argv[i][0] != '\0')
 			write(1, " ", 1);
 		i++;

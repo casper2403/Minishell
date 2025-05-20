@@ -24,8 +24,8 @@ int	prs_process_redirection(char *input, int *i, bool *in_quotes)
 {
 	int	status;
 
-	if (!in_quotes[0] && !in_quotes[1]
-		&& (input[*i] == '>' || input[*i] == '<'))
+	if (!in_quotes[0] && !in_quotes[1] && (input[*i] == '>'
+			|| input[*i] == '<'))
 	{
 		status = check_redir_count(input, i);
 		if (status != 0)
@@ -36,4 +36,31 @@ int	prs_process_redirection(char *input, int *i, bool *in_quotes)
 		return (1);
 	}
 	return (0);
+}
+
+void	handle_not_found_error(char *cmd, char *path, int has_slash)
+{
+	if (has_slash)
+	{
+		write(2, cmd, ft_strlen(cmd));
+		write(2, ": No such file or directory\n", 28);
+	}
+	else
+	{
+		write(2, cmd, ft_strlen(cmd));
+		write(2, ": command not found\n", 20);
+	}
+	if (path)
+		free(path);
+	exit(127);
+}
+
+void	handle_other_error(char *cmd, char *path)
+{
+	write(2, cmd, ft_strlen(cmd));
+	write(2, ": ", 2);
+	perror("");
+	if (path)
+		free(path);
+	exit(126);
 }

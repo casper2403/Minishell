@@ -53,7 +53,7 @@ void	print_redir_error(char *token)
 	{
 		write(2, " syntax error near unexpected token `", 37);
 		write(2, token, ft_strlen(token));
-		write(1, "'", 1);
+		write(2, "'", 1);
 	}
 	write(2, "\n", 1);
 }
@@ -94,14 +94,7 @@ int	check_after_redir(char *input, int *i)
 		(*i)++;
 	if (!input[*i] || input[*i] == '>' || input[*i] == '<' || input[*i] == '|')
 	{
-		if (!input[*i])
-			token = "newline";
-		else if (input[*i] == '>')
-			token = ">";
-		else if (input[*i] == '<')
-			token = "<";
-		else
-			token = "|";
+		token = get_token_type(input, i);
 		print_redir_error(token);
 		return (-2);
 	}

@@ -12,27 +12,6 @@
 
 #include "minishell.h"
 
-void	expand_args(char **argv, bool *quote_type,
-						int last_exit, char **env)
-{
-	int		i;
-	char	*old;
-
-	i = 0;
-	while (argv[i])
-	{
-		if (quote_type && quote_type[i])
-		{
-			i++;
-			continue ;
-		}
-		old = argv[i];
-		argv[i] = expand_variables(old, last_exit, env);
-		free(old);
-		i++;
-	}
-}
-
 int	execute_builtin(struct s_token *token, int *last_exit, char ***env)
 {
 	if (!token || !token->argv || !token->argv[0])
@@ -43,7 +22,7 @@ int	execute_builtin(struct s_token *token, int *last_exit, char ***env)
 	if (ft_strcmp(token->argv[0], "cd") == 0)
 		return (*last_exit = builtin_cd(token->argv, env));
 	if (ft_strcmp(token->argv[0], "pwd") == 0)
-		return (*last_exit = builtin_pwd(token->argv));
+		return (*last_exit = builtin_pwd(token->argv, env));
 	if (ft_strcmp(token->argv[0], "export") == 0)
 		return (*last_exit = builtin_export(token->argv, env));
 	if (ft_strcmp(token->argv[0], "unset") == 0)
@@ -55,47 +34,38 @@ int	execute_builtin(struct s_token *token, int *last_exit, char ***env)
 	return (*last_exit = 0);
 }
 
-char	*search_in_dirs(char *cmd, char **dirs)
+// For invalid commands (not found in PATH)
+void	command_not_found_exit(char *cmd, int *last_exit)
 {
-	int		i;
-	char	*tmp;
-	char	*full;
-
-	i = 0;
-	while (dirs[i])
-	{
-		tmp = ft_strjoin(dirs[i], "/");
-		full = ft_strjoin(tmp, cmd);
-		free(tmp);
-		if (access(full, X_OK) == 0)
-			return (full);
-		free(full);
-		i++;
-	}
-	return (NULL);
-}
-
-void	command_not_found_exit(char *argv, int *last_exit)
-{
-	char	*la;
-
-	if (ft_strcmp(argv, "$?") == 0)
-	{
-		la = ft_itoa(*last_exit);
-		write(2, la, ft_strlen(la));
-		free(la);
-	}
-	else
-		write(2, argv, ft_strlen(argv));
+	(void)last_exit;
+	write(2, cmd, ft_strlen(cmd));
 	write(2, ": command not found\n", 20);
 	exit(127);
 }
 
-void	is_dir_exit(char *argv, char *path)
+// For non-existent files with path
+void	no_such_file_exit(char *cmd, char *path)
 {
-	write(2, argv, ft_strlen(argv));
+	(void)path;
+	write(2, cmd, ft_strlen(cmd));
+	write(2, ": No such file or directory\n", 28);
+	exit(127);
+}
+
+// For directories with path
+void	is_dir_exit(char *cmd, char *path)
+{
+	(void)path;
+	write(2, cmd, ft_strlen(cmd));
 	write(2, ": Is a directory\n", 17);
-	if (path)
-		free(path);
+	exit(126);
+}
+
+// For files without execute permissions with path
+void	permission_denied_exit(char *cmd, char *path)
+{
+	(void)path;
+	write(2, cmd, ft_strlen(cmd));
+	write(2, ": Permission denied\n", 20);
 	exit(126);
 }

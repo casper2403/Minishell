@@ -69,5 +69,6 @@ int	builtin_cd(char **argv, char ***env)
 		return (free(path), 1);
 	update_environment(env, oldpwd, newpwd);
 	free(path);
+	update_last_command(env, "cd");
 	return (0);
 }

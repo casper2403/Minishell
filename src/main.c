@@ -12,8 +12,6 @@
 
 #include "minishell.h"
 
-int	g_is_child_running = 0; // Add this global variable
-
 static void	free_env(char **env)
 {
 	int	i;
@@ -81,7 +79,7 @@ static int	initialize_shell(char **env, char ***local_env)
 		return (1);
 	}
 	increment_shlvl(local_env);
-	setup_signals();
+	setup_signals(0);
 	return (0);
 }
 
@@ -91,6 +89,9 @@ int	main(int argc, char **argv, char **env)
 	char	**local_env;
 	int		last_exit;
 
+	if (argv[1])
+		return (printf("minishell: %s: No such file or directory\n",
+				argv[1]), 1);
 	last_exit = 0;
 	if (initialize_shell(env, &local_env))
 		return (1);

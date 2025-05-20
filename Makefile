@@ -39,7 +39,9 @@ EXEC_SRCS	= src/args_counting.c \
 			  src/split_input_utils.c \
 			  src/split_input_utils2.c \
 			  src/signals.c \
-			  src/copyenv_and_getvarname.c
+			  src/copyenv_and_getvarname.c \
+			  src/ulc.c \
+			  src/extras.c
 EXEC_SRCS	+= src/builtin/builtin_cd.c src/builtin/builtin_cd_utils.c src/builtin/builtin_echo.c src/builtin/builtin_env.c
 EXEC_SRCS	+= src/builtin/builtin_exit.c src/builtin/builtin_export_utils.c src/builtin/builtin_export.c src/builtin/builtin_pwd.c src/builtin/builtin_unset.c src/builtin/builtin_export_utils2.c
 

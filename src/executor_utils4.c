@@ -21,7 +21,8 @@ int	handle_heredoc(t_redir *r, int last_exit, char **env)
 
 	if (pipe(pipe_fd) < 0)
 		return (perror("pipe"), 1);
-	while (1)
+	setup_signals(2);
+	while (!g_heredoc_interrupt)
 	{
 		line = readline("> ");
 		if (!line || ft_strcmp(line, r->file) == 0)
@@ -36,8 +37,15 @@ int	handle_heredoc(t_redir *r, int last_exit, char **env)
 			ft_putendl_fd(line, pipe_fd[1]);
 		free(line);
 	}
+	if (g_heredoc_interrupt)
+    {
+        close(pipe_fd[0]);
+        close(pipe_fd[1]);
+        return -1;  // Return error on interrupt
+    }
 	free(line);
 	close(pipe_fd[1]);
+	setup_signals(0);
 	return (close(pipe_fd[1]), fd = dup(pipe_fd[0]), close(pipe_fd[0]), fd);
 }
 
@@ -58,6 +66,8 @@ int	setup_redirections(t_redir *r, int *last_exit, char **env)
 	{
 		if (r->type == REDIR_HEREDOC)
 			fd = handle_heredoc(r, *last_exit, env);
+		if (fd == -1)
+			return (1);
 		else if (r->type == REDIR_IN)
 			fd = open(r->file, O_RDONLY);
 		else if (r->type == REDIR_OUT)
@@ -95,22 +105,9 @@ void	handle_empty_args(struct s_token *token)
 void	handle_command_error(char *cmd, char *path, int error_code)
 {
 	if (error_code == ENOENT)
-	{
-		write(2, cmd, ft_strlen(cmd));
-		write(2, ": command not found\n", 20);
-		free(path);
-		exit(127);
-	}
+		handle_not_found_error(cmd, path, ft_strchr(cmd, '/') != NULL);
 	else if (error_code == EACCES)
-	{
 		permission_denied_exit(cmd, path);
-	}
 	else
-	{
-		write(2, cmd, ft_strlen(cmd));
-		write(2, ": ", 2);
-		perror("");
-		free(path);
-		exit(126);
-	}
+		handle_other_error(cmd, path);
 }

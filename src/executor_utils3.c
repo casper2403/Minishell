@@ -12,38 +12,6 @@
 
 #include "minishell.h"
 
-void	permission_denied_exit(char *argv, char *path)
-{
-	write(2, argv, ft_strlen(argv));
-	write(2, ": Permission denied\n", 20);
-	if (path)
-		free(path);
-	exit(126);
-}
-
-char	*handle_pwd_var(char **env)
-{
-	char	*path;
-
-	path = env_get("PWD", env);
-	if (path && *path)
-		return (ft_strdup(path));
-	return (NULL);
-}
-
-char	*handle_absolute_path(char *cmd)
-{
-	struct stat	st;
-
-	if (stat(cmd, &st) == 0 && S_ISDIR(st.st_mode))
-		return (ft_strdup(cmd));
-	if (access(cmd, X_OK) == 0)
-		return (ft_strdup(cmd));
-	if (access(cmd, F_OK) == 0)
-		return (ft_strdup(cmd));
-	return (ft_strdup(cmd));
-}
-
 char	*handle_path_search(char *cmd, char **env)
 {
 	char	*path;
@@ -62,20 +30,62 @@ char	*handle_path_search(char *cmd, char **env)
 	while (dirs[i])
 		free(dirs[i++]);
 	free(dirs);
-	if (!res && cmd[0] != '\0')
-		return (ft_strdup(cmd));
 	return (res);
 }
 
 char	*find_executable(char *cmd, char **env)
 {
-	if (!cmd || !*cmd)
-		return (NULL);
-	if (ft_strcmp(cmd, "$PWD") == 0)
-		return (handle_pwd_var(env));
-	if (cmd[0] == '/' || cmd[0] == '.' || cmd[0] == '~')
-		return (handle_absolute_path(cmd));
-	if (access(cmd, X_OK) == 0)
+	if (ft_strchr(cmd, '/'))
 		return (ft_strdup(cmd));
 	return (handle_path_search(cmd, env));
+}
+
+void	expand_args(char **argv, bool *quote_type, int last_exit, char **env)
+{
+	int		i;
+	char	*old;
+
+	i = 0;
+	while (argv[i])
+	{
+		if (quote_type && quote_type[i])
+		{
+			i++;
+			continue ;
+		}
+		old = argv[i];
+		argv[i] = expand_variables(old, last_exit, env);
+		free(old);
+		i++;
+	}
+}
+
+char	*search_in_dirs(char *cmd, char **dirs)
+{
+	int		i;
+	char	*tmp;
+	char	*full;
+
+	i = 0;
+	while (dirs[i])
+	{
+		tmp = ft_strjoin(dirs[i], "/");
+		full = ft_strjoin(tmp, cmd);
+		free(tmp);
+		if (access(full, X_OK) == 0)
+			return (full);
+		free(full);
+		i++;
+	}
+	return (NULL);
+}
+
+char	*handle_pwd_var(char **env)
+{
+	char	*path;
+
+	path = env_get("PWD", env);
+	if (path && *path)
+		return (ft_strdup(path));
+	return (NULL);
 }

@@ -13,7 +13,7 @@
 #include "../minishell.h"
 
 //TODO remove printf
-int	builtin_pwd(char **argv)
+int	builtin_pwd(char **argv, char ***env)
 {
 	char	*pwd;
 
@@ -21,5 +21,6 @@ int	builtin_pwd(char **argv)
 	pwd = getcwd(NULL, 0);
 	printf("%s\n", pwd);
 	free(pwd);
+	update_last_command(env, "pwd");
 	return (0);
 }

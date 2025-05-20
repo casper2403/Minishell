@@ -105,5 +105,6 @@ int	builtin_export(char **argv, char ***env)
 		}
 		i++;
 	}
+	update_last_command(env, "export");
 	return (ret);
 }

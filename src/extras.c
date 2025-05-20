@@ -1,29 +1,24 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   builtin_env.c                                      :+:      :+:    :+:   */
+/*   extras.c                                           :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: cstevens <cstevens@student.s19.be>         +#+  +:+       +#+        */
+/*   By: pvandebe <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2025/05/08 10:50:00 by cstevens          #+#    #+#             */
-/*   Updated: 2025/05/08 10:50:01 by cstevens         ###   ########.fr       */
+/*   Created: 2025/05/21 14:07:28 by pvandebe          #+#    #+#             */
+/*   Updated: 2025/05/21 14:07:34 by pvandebe         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
+#include "minishell.h"
 
-#include "../minishell.h"
-
-int	builtin_env(char **argv, char ***env)
+const char	*get_last_arg(struct s_token *tok)
 {
 	int	i;
 
-	update_last_command(env, "/usr/bin/env");
-	(void)argv;
 	i = 0;
-	while ((*env)[i])
-	{
-		printf("%s\n", (*env)[i]);
+	if (!tok->argv || !tok->argv[0])
+		return (NULL);
+	while (tok->argv[i + 1])
 		i++;
-	}
-	update_last_command(env, "env");
-	return (0);
+	return (tok->argv[i]);
 }

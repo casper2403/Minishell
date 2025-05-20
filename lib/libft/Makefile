@@ -17,7 +17,6 @@ obj/%.o: %.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
 clean:
-	rm -f $(OFILES)
 	rm -rf obj
 
 fclean : clean

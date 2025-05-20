@@ -71,7 +71,7 @@ static void	wait_for_children(t_piper *piper, int *last_exit)
 				*last_exit = 128 + WTERMSIG(status);
 		}
 	}
-	g_is_child_running = 0;
+	setup_signals(0);
 }
 
 int	executor(struct s_token **tokens, int *last_exit, char ***env)

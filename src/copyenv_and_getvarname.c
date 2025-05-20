@@ -22,6 +22,28 @@ char	*get_var_name(char *str)
 	return (ft_substr(str, 0, i));
 }
 
+void	initialize_default_env(char ***local_env)
+{
+	char	cwd[1024];
+	char	*default_path;
+	char	*system_path;
+
+	default_path = "/usr/bin:/bin";
+	if (!getcwd(cwd, sizeof(cwd)))
+		return ;
+	system_path = getenv("PATH");
+	if (!system_path)
+		system_path = default_path;
+	*local_env = malloc(sizeof(char *) * 5);
+	if (!*local_env)
+		return ;
+	(*local_env)[0] = ft_strjoin("PWD=", cwd);
+	(*local_env)[1] = ft_strdup("SHLVL=1");
+	(*local_env)[2] = ft_strjoin("PATH=", system_path);
+	(*local_env)[3] = ft_strdup("_=./minishell");
+	(*local_env)[4] = NULL;
+}
+
 char	**copy_env(char **env)
 {
 	int		count;
@@ -67,4 +89,23 @@ void	setup_child_io(struct s_piper *piper)
 		close(piper->pipe_fd[0]);
 	if (piper->pipe_fd[1] != -1 && piper->pipe_fd[1] != piper->out_fd)
 		close(piper->pipe_fd[1]);
+}
+
+char	*get_token_type(char *input, int *i)
+{
+	if (!input[*i])
+		return ("newline");
+	else if (input[*i] == '>')
+	{
+		if (input[*i + 1] == '>')
+			return (">>");
+		return (">");
+	}
+	else if (input[*i] == '<')
+	{
+		if (input[*i + 1] == '<')
+			return ("<<");
+		return ("<");
+	}
+	return ("|");
 }

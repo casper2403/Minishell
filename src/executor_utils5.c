@@ -28,19 +28,29 @@ void	exec_child(struct s_token *token, int *last_exit, char ***env)
 {
 	char	*path;
 
+	path = NULL;
 	handle_empty_args(token);
 	if (token->built_in)
 		exit(execute_builtin(token, last_exit, env));
 	if (!token->argv[0] || !token->argv[0][0])
 		exit(0);
-	path = find_executable(token->argv[0], *env);
-	execute_command(token, path, *env);
+	if (ft_strchr(token->argv[0], '/'))
+		fuck_the_norm(token, env);
+	else
+	{
+		path = find_executable(token->argv[0], *env);
+		if (!path)
+			command_not_found_exit(token->argv[0], last_exit);
+		execve(path, token->argv, *env);
+		free(path);
+		permission_denied_exit(token->argv[0], NULL);
+	}
 }
 
 int	fork_and_execute(struct s_token *token, int *last_exit,
-					struct s_piper *piper, char ***env)
+		struct s_piper *piper, char ***env)
 {
-	g_is_child_running = 1;
+	setup_signals(1);
 	piper->pids[piper->i] = fork();
 	if (piper->pids[piper->i] == -1)
 		return (-1);
@@ -70,19 +80,22 @@ int	prepare_fds(struct s_piper *piper, struct s_token **tokens)
 	return (0);
 }
 
-int	execute_cmd(struct s_token *tok, int *last_exit,
-			struct s_piper *piper, char ***env)
+int	execute_cmd(struct s_token *tok, int *last_exit, struct s_piper *piper,
+		char ***env)
 {
 	if (tok->argv)
 		expand_args(tok->argv, tok->quoted, *last_exit, *env);
 	if (tok->built_in && piper->in_fd == STDIN_FILENO
 		&& piper->out_fd == STDOUT_FILENO && !tok->redirs)
 	{
+		update_last_command(env, tok->argv[0]);
 		execute_builtin(tok, last_exit, env);
 		piper->pids[piper->i] = 0;
 	}
 	else
 	{
+		if (tok->argv && tok->argv[0])
+			update_cmd(tok, env);
 		if (fork_and_execute(tok, last_exit, piper, env) < 0)
 			return (1);
 	}

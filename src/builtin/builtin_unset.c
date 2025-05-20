@@ -94,5 +94,6 @@ int	builtin_unset(char **argv, char ***env)
 			ret = 1;
 		i++;
 	}
+	update_last_command(env, "unset");
 	return (ret);
 }
