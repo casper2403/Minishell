@@ -37,8 +37,8 @@ static int	uns_find_env_var(char *var_name, char **env)
 	len = ft_strlen(var_name);
 	while (env[i])
 	{
-		if (ft_strncmp(env[i], var_name, len) == 0
-			&& (env[i][len] == '=' || env[i][len] == '\0'))
+		if (ft_strncmp(env[i], var_name, len) == 0 && (env[i][len] == '='
+			|| env[i][len] == '\0'))
 			return (i);
 		i++;
 	}

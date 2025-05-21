@@ -23,8 +23,8 @@ int	find_env_var(char *var, char **env)
 		len++;
 	while (env[i])
 	{
-		if (ft_strncmp(env[i], var, len) == 0
-			&& (env[i][len] == '=' || env[i][len] == '\0'))
+		if (ft_strncmp(env[i], var, len) == 0 && (env[i][len] == '='
+			|| env[i][len] == '\0'))
 			return (i);
 		i++;
 	}
@@ -68,8 +68,8 @@ int	create_new_env_array(char *var, char ***env, int env_size)
 
 int	add_env_var(char *var, char ***env)
 {
-	int		index;
-	int		i;
+	int	index;
+	int	i;
 
 	index = find_env_var(var, *env);
 	if (index >= 0)

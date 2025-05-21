@@ -6,7 +6,7 @@
 #    By: cstevens <cstevens@student.s19.be>         +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2025/05/08 10:47:04 by cstevens          #+#    #+#              #
-#    Updated: 2025/05/08 10:47:53 by cstevens         ###   ########.fr        #
+#    Updated: 2025/05/22 22:27:40 by cstevens         ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -26,6 +26,9 @@ EXEC_SRCS	= src/args_counting.c \
 			  src/executor_utils3.c \
 			  src/executor_utils4.c \
 			  src/executor_utils5.c \
+			  src/executor_utils6.c \
+			  src/executor_utils7.c \
+			  src/executor_utils8.c \
 			  src/free_functions.c \
 			  src/main.c \
 			  src/parser.c \

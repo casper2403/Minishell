@@ -62,7 +62,8 @@ int	split_input_process(char *input, char **tokenized,
 	if (input[i] == '|' && !quotes[0] && !quotes[1])
 		return (handle_pipe(input, tokenized, indices));
 	else if ((input[i] == ';' || input[i] == '\\') && !quotes[0] && !quotes[1])
-		return (handle_invalid(tokenized, j));
+		return (write(2, "minishell should not handle ; or \\\n", 36),
+			handle_invalid(tokenized, j));
 	else
 	{
 		handle_quotes(input[i], quotes);

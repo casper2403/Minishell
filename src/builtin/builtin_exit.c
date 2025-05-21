@@ -30,28 +30,31 @@ static int	is_numeric(const char *str)
 	return (1);
 }
 
-int	builtin_exit(char **argv)
+int	builtin_exit(char **argv, char **env, int *last_exit)
 {
-	int	status;
+	static int	status = 0;
 
-	status = 0;
+	(void)env;
 	ft_putstr_fd("exit\n", 1);
 	if (argv[1] && argv[2])
 	{
 		ft_putstr_fd("minishell: exit: too many arguments\n", 2);
-		exit (1);
+		return (1);
 	}
 	if (argv[1])
 	{
 		if (!is_numeric(argv[1]))
-		{
-			ft_putstr_fd("minishell: exit: ", 2);
-			ft_putstr_fd(argv[1], 2);
-			ft_putstr_fd(": numeric argument required\n", 2);
-			exit(2);
-		}
+			return (ft_putstr_fd("minishell: exit: ", 2), ft_putstr_fd(argv[1],
+					2), ft_putstr_fd(": numeric argument required\n", 2), -2);
 		status = ft_atoi(argv[1]);
 	}
-	exit(status);
-	return (0);
+	if (status != 0)
+	{
+		if (status < 0)
+			status = status + 256;
+		return (status * -1);
+	}
+	if (*last_exit == 0)
+		return (6969);
+	return (*last_exit * -1);
 }

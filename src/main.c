@@ -12,7 +12,7 @@
 
 #include "minishell.h"
 
-static void	free_env(char **env)
+void	free_env(char **env)
 {
 	int	i;
 
@@ -90,8 +90,8 @@ int	main(int argc, char **argv, char **env)
 	int		last_exit;
 
 	if (argv[1])
-		return (printf("minishell: %s: No such file or directory\n",
-				argv[1]), 1);
+		return (printf("minishell: %s: No such file or directory\n", argv[1]),
+			1);
 	last_exit = 0;
 	if (initialize_shell(env, &local_env))
 		return (1);
@@ -99,6 +99,8 @@ int	main(int argc, char **argv, char **env)
 	(void)argv;
 	while (1)
 	{
+		if (last_exit == 6969 || last_exit < 0)
+			break ;
 		input = readline("minishell> ");
 		handle_input(input, &last_exit, &local_env);
 		if (!input)
@@ -106,5 +108,5 @@ int	main(int argc, char **argv, char **env)
 	}
 	free_env(local_env);
 	rl_clear_history();
-	return (0);
+	return (return_right_exit_value(last_exit));
 }

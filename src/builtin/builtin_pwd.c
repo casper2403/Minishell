@@ -12,7 +12,7 @@
 
 #include "../minishell.h"
 
-//TODO remove printf
+// TODO remove printf
 int	builtin_pwd(char **argv, char ***env)
 {
 	char	*pwd;

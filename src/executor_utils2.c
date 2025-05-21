@@ -6,7 +6,7 @@
 /*   By: cstevens <cstevens@student.s19.be>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/05/16 15:46:27 by cstevens          #+#    #+#             */
-/*   Updated: 2025/05/16 15:46:29 by cstevens         ###   ########.fr       */
+/*   Updated: 2025/05/22 22:22:59 by cstevens         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -30,17 +30,15 @@ int	execute_builtin(struct s_token *token, int *last_exit, char ***env)
 	if (ft_strcmp(token->argv[0], "env") == 0)
 		return (*last_exit = builtin_env(token->argv, env));
 	if (ft_strcmp(token->argv[0], "exit") == 0)
-		return (builtin_exit(token->argv));
+		return (*last_exit = builtin_exit(token->argv, *env, last_exit));
 	return (*last_exit = 0);
 }
 
-// For invalid commands (not found in PATH)
-void	command_not_found_exit(char *cmd, int *last_exit)
+int	command_not_found_exit(char *cmd)
 {
-	(void)last_exit;
 	write(2, cmd, ft_strlen(cmd));
 	write(2, ": command not found\n", 20);
-	exit(127);
+	exit (127);
 }
 
 // For non-existent files with path
@@ -48,7 +46,7 @@ void	no_such_file_exit(char *cmd, char *path)
 {
 	(void)path;
 	write(2, cmd, ft_strlen(cmd));
-	write(2, ": No such file or directory\n", 28);
+	write(2, ": No such file or directoryy\n", 29);
 	exit(127);
 }
 

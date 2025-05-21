@@ -6,7 +6,7 @@
 /*   By: cstevens <cstevens@student.s19.be>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/05/08 10:48:13 by cstevens          #+#    #+#             */
-/*   Updated: 2025/05/08 10:48:18 by cstevens         ###   ########.fr       */
+/*   Updated: 2025/05/16 16:47:08 by cstevens         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 #include "minishell.h"
@@ -35,10 +35,7 @@ int	execute_loop(struct s_piper *piper, struct s_token **tokens, int *last_exit,
 			return (1);
 		}
 		if (execute_cmd(tokens[piper->i], last_exit, piper, env))
-		{
-			*last_exit = 1;
-			return (1);
-		}
+			return (*last_exit);
 		update_fds(piper, tokens);
 	}
 	return (0);
@@ -68,10 +65,13 @@ static void	wait_for_children(t_piper *piper, int *last_exit)
 			if (WIFEXITED(status))
 				*last_exit = WEXITSTATUS(status);
 			else if (WIFSIGNALED(status))
+			{
 				*last_exit = 128 + WTERMSIG(status);
+				if (WTERMSIG(status) == SIGQUIT)
+					ft_putstr_fd("Quit (core dumped)\n", STDERR_FILENO);
+			}
 		}
 	}
-	setup_signals(0);
 }
 
 int	executor(struct s_token **tokens, int *last_exit, char ***env)
@@ -81,10 +81,16 @@ int	executor(struct s_token **tokens, int *last_exit, char ***env)
 	initialize_piper(&piper, tokens);
 	if (!piper.pids)
 		return (*last_exit = 1, 1);
+	setup_signals(1);
 	if (execute_loop(&piper, tokens, last_exit, env))
-		return (free(piper.pids), *last_exit);
+	{
+		free(piper.pids);
+		setup_signals(0);
+		return (*last_exit);
+	}
 	if (piper.in_fd != STDIN_FILENO)
 		close(piper.in_fd);
 	wait_for_children(&piper, last_exit);
+	setup_signals(0);
 	return (free(piper.pids), *last_exit);
 }

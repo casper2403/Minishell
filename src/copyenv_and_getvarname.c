@@ -87,8 +87,6 @@ void	setup_child_io(struct s_piper *piper)
 	}
 	if (piper->pipe_fd[0] != -1 && piper->pipe_fd[0] != piper->in_fd)
 		close(piper->pipe_fd[0]);
-	if (piper->pipe_fd[1] != -1 && piper->pipe_fd[1] != piper->out_fd)
-		close(piper->pipe_fd[1]);
 }
 
 char	*get_token_type(char *input, int *i)

@@ -6,7 +6,7 @@
 /*   By: cstevens <cstevens@student.s19.be>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/05/08 10:49:15 by cstevens          #+#    #+#             */
-/*   Updated: 2025/05/16 16:47:08 by cstevens         ###   ########.fr       */
+/*   Updated: 2025/05/22 22:34:15 by cstevens         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -25,7 +25,8 @@
 # include <sys/stat.h>
 # include <sys/wait.h>
 # include <unistd.h>
-extern volatile sig_atomic_t g_heredoc_interrupt;
+
+extern volatile sig_atomic_t	g_heredoc_interrupt;
 typedef struct s_split
 {
 	int				i;
@@ -37,6 +38,13 @@ typedef struct s_split
 	char			**argv;
 	bool			**quoted;
 }					t_split;
+typedef struct s_heredoc_ctx
+{
+	int		fd;
+	int		last_exit;
+	char	**env;
+	bool	quoted;
+}					t_heredoc_ctx;
 typedef enum e_redir_type
 {
 	REDIR_IN,
@@ -57,6 +65,7 @@ typedef struct s_token
 	bool			*quoted;
 	bool			built_in;
 	t_redir			*redirs;
+	char			*exec_path;
 	struct s_token	*next;
 }					t_token;
 
@@ -73,6 +82,8 @@ typedef struct s_piper
 // main functions
 char				**copy_env(char **env);
 void				initialize_default_env(char ***local_env);
+void				free_env(char **env);
+int					return_right_exit_value(int last_exit);
 // parser functions
 int					process_input(char *input, int *last_exit, char ***env);
 struct s_token		**parser(struct s_token **tokens);
@@ -129,7 +140,7 @@ int					builtin_pwd(char **argv, char ***env);
 int					builtin_export(char **argv, char ***env);
 int					builtin_unset(char **argv, char ***env);
 int					builtin_env(char **argv, char ***env);
-int					builtin_exit(char **argv);
+int					builtin_exit(char **argv, char **env, int *last_exit);
 // utils
 void				append_str(char **dest, const char *src);
 // char				*expand_variables(char *str, int last_exit, char ***env);
@@ -146,7 +157,7 @@ void				expand_args(char **argv, bool *quote_type, int last_exit,
 int					execute_builtin(struct s_token *token, int *last_exit,
 						char ***env);
 char				*search_in_dirs(char *cmd, char **dirs);
-void				command_not_found_exit(char *argv, int *last_exit);
+int					command_not_found(char *argv, int *last_exit);
 void				is_dir_exit(char *argv, char *path);
 void				permission_denied_exit(char *argv, char *path);
 char				*handle_pwd_var(char **env);
@@ -174,6 +185,22 @@ void				handle_not_found_error(char *cmd,
 						char *path, int has_slash);
 void				handle_other_error(char *cmd, char *path);
 void				no_such_file_exit(char *cmd, char *path);
+int					fork_and_execute(struct s_token *token, int *last_exit,
+						struct s_piper *piper, char ***env);
+void				execute_command(struct s_token *token,
+						char *path, char **env);
+int					permission_denied(char *cmd, int *last_exit);
+int					is_directory(char *cmd, int *last_exit);
+int					no_such_file(char *cmd, int *last_exit);
+int					prepare_fds(struct s_piper *piper, struct s_token **tokens);
+int					handle_empty_command(struct s_token *tok, int *last_exit,
+						struct s_piper *piper);
+void				shift_empty_first_arg(struct s_token *tok);
+void				write_heredoc_line(char *line, t_heredoc_ctx *ctx);
+int					process_heredoc_lines(t_redir *r, int last_exit,
+						char **env, int pipe_fd[2]);
+int					command_not_found(char *cmd, int *last_exit);
+int					handle_heredoc(t_redir *r, int last_exit, char **env);
 // export utils
 int					exp_is_valid_var_name(char *name);
 int					env_var_cmp(char *s1, char *s2);
@@ -208,6 +235,8 @@ char				*get_target_path(char **argv, char **env);
 
 void				update_last_command(char ***env, const char *last_command);
 void				update_cmd(struct s_token *tok, char ***env);
-
 const char			*get_last_arg(struct s_token *tok);
+int					command_not_found_exit(char *cmd);
+void				free_env(char **env);
+
 #endif
