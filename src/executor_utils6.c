@@ -42,18 +42,6 @@ int	permission_denied(char *cmd, int *last_exit)
 	return (1);
 }
 
-void	execute_command(struct s_token *token, char *path, char **env)
-{
-	struct stat	st;
-
-	if (!path)
-		command_not_found_exit(token->argv[0]);
-	if (stat(path, &st) == 0 && S_ISDIR(st.st_mode))
-		is_dir_exit(token->argv[0], path);
-	execve(path, token->argv, env);
-	handle_command_error(token->argv[0], path, errno);
-}
-
 int	fork_and_execute(struct s_token *token, int *last_exit,
 					struct s_piper *piper, char ***env)
 {

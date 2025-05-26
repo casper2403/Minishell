@@ -34,13 +34,6 @@ int	execute_builtin(struct s_token *token, int *last_exit, char ***env)
 	return (*last_exit = 0);
 }
 
-int	command_not_found_exit(char *cmd)
-{
-	write(2, cmd, ft_strlen(cmd));
-	write(2, ": command not found\n", 20);
-	exit (127);
-}
-
 // For non-existent files with path
 void	no_such_file_exit(char *cmd, char *path)
 {
